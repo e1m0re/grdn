@@ -1,40 +1,16 @@
 package main
 
 import (
+	"fmt"
+	"github.com/go-chi/chi/v5"
+	"log"
 	"net/http"
 	"strconv"
-	"strings"
+
+	"github.com/e1m0re/grdn/internal/storage"
 )
 
-type MemStorage struct {
-	data map[string]int
-}
-
-func (store *MemStorage) UpdateMetric(mType string, name string, value string) {
-	i, _ := strconv.Atoi(value)
-	switch mType {
-	case "gauge", "float64":
-		store.data[name] = i
-	case "counter", "int64":
-		store.data[name] += i
-	}
-}
-
-var storage = MemStorage{data: map[string]int{}}
-
-func isValidMetricsType(value string) bool {
-	switch value {
-	case "gauge", "float64", "counter", "int64":
-		return true
-	default:
-		return false
-	}
-}
-
-func isValidValue(value string) bool {
-	_, err := strconv.Atoi(value)
-	return err == nil
-}
+var store = storage.NewMemStorage()
 
 func updateMetricHandler(response http.ResponseWriter, request *http.Request) {
 	if request.Method != http.MethodPost {
@@ -42,35 +18,62 @@ func updateMetricHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	// check type
-	pathParams := strings.Split(request.RequestURI, "/")
-	if len(pathParams) < 3 || !isValidMetricsType(pathParams[2]) {
+	mType := chi.URLParam(request, "mType")
+	if !storage.IsValidMetricsType(mType) {
 		response.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	// check name
-	if len(pathParams) < 4 || len(pathParams[3]) == 0 {
+	mName := chi.URLParam(request, "mName")
+	if !store.IsValidMetricName(mType, mName) {
 		response.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	// check value
-	if len(pathParams) < 5 || !isValidValue(pathParams[4]) {
-		response.WriteHeader(http.StatusBadRequest)
-		return
+	mValue := chi.URLParam(request, "mValue")
+
+	switch mType {
+	case storage.GaugeType:
+		value, err := strconv.ParseFloat(mValue, 64)
+		if err != nil {
+			response.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		store.UpdateGaugeMetric(mName, value)
+	case storage.CounterType:
+		value, err := strconv.ParseInt(mValue, 10, 64)
+		if err != nil {
+			response.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		store.UpdateCounterMetric(mName, value)
+	}
+}
+
+func mainPageHandler(response http.ResponseWriter, request *http.Request) {
+	for _, value := range store.GetAllMetrics() {
+		fmt.Fprintf(response, "%s\r\n", value)
+	}
+}
+
+func getMetricValueHandler(response http.ResponseWriter, request *http.Request) {
+	value, err := store.GetMetricValue(chi.URLParam(request, "mType"), chi.URLParam(request, "mName"))
+	if err != nil {
+		response.WriteHeader(http.StatusNotFound)
 	}
 
-	storage.UpdateMetric(pathParams[2], pathParams[3], pathParams[4])
+	response.Write([]byte(value))
+}
 
-	return
+func AppRouter() chi.Router {
+	router := chi.NewRouter()
+	router.Route("/", func(r chi.Router) {
+		router.Get("/", mainPageHandler)
+		router.Get("/value/{mType}/{mName}", getMetricValueHandler)
+		router.Post("/update/{mType}/{mName}/{mValue}", updateMetricHandler)
+	})
+	return router
 }
 func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc(`/update/`, updateMetricHandler)
-
-	err := http.ListenAndServe(`localhost:8080`, mux)
-	if err != nil {
-		panic(err)
-	}
+	log.Fatal(http.ListenAndServe(`localhost:8080`, AppRouter()))
 }
