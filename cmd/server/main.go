@@ -4,36 +4,20 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/e1m0re/grdn/internal/storage"
 )
 
-type MemStorage struct {
-	data map[string]int
-}
+var store = storage.NewMemStorage()
 
-func (store *MemStorage) UpdateMetric(mType string, name string, value string) {
-	i, _ := strconv.Atoi(value)
-	switch mType {
-	case "gauge", "float64":
-		store.data[name] = i
-	case "counter", "int64":
-		store.data[name] += i
+func isValidMetricName(mType storage.MetricsType, value string) bool {
+	if mType == storage.GuageType {
+		return storage.IsValidGuageName(value)
 	}
-}
-
-var storage = MemStorage{data: map[string]int{}}
-
-func isValidMetricsType(value string) bool {
-	switch value {
-	case "gauge", "float64", "counter", "int64":
-		return true
-	default:
-		return false
+	if mType == storage.CounterType {
+		return storage.IsValidCounterName(value)
 	}
-}
-
-func isValidValue(value string) bool {
-	_, err := strconv.Atoi(value)
-	return err == nil
+	return false
 }
 
 func updateMetricHandler(response http.ResponseWriter, request *http.Request) {
@@ -44,27 +28,43 @@ func updateMetricHandler(response http.ResponseWriter, request *http.Request) {
 
 	// check type
 	pathParams := strings.Split(request.RequestURI, "/")
-	if len(pathParams) < 3 || !isValidMetricsType(pathParams[2]) {
+	if len(pathParams) < 3 || !storage.IsValidMetricsType(pathParams[2]) {
 		response.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	// check name
-	if len(pathParams) < 4 || len(pathParams[3]) == 0 {
+	if len(pathParams) < 4 || !isValidMetricName(pathParams[2], pathParams[3]) {
 		response.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	// check value
-	if len(pathParams) < 5 || !isValidValue(pathParams[4]) {
+	if len(pathParams) < 5 {
 		response.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	storage.UpdateMetric(pathParams[2], pathParams[3], pathParams[4])
+	switch pathParams[2] {
+	case storage.GuageType:
+		value, err := strconv.ParseFloat(pathParams[4], 64)
+		if err != nil {
+			response.WriteHeader(http.StatusBadRequest)
+			return
+		}
 
-	return
+		store.UpdateGuageMetric(pathParams[3], value)
+	case storage.CounterType:
+		value, err := strconv.ParseInt(pathParams[4], 10, 64)
+		if err != nil {
+			response.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		store.UpdateCounterMetric(pathParams[3], value)
+	}
 }
+
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc(`/update/`, updateMetricHandler)
