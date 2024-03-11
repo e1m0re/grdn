@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -53,11 +54,16 @@ func UpdateMetrics(data *storage.MetricsState) {
 func sendMetric(mType string, mName string, mValue string) (err error) {
 	var u = url.URL{
 		Scheme: "http",
-		Host:   "localhost:8080",
+		Host:   agentOptions.flagRunAddr,
 		Path:   fmt.Sprintf("/update/%s/%s/%s", mType, mName, mValue),
 	}
 	resp, err := http.Post(u.String(), "text/plan", nil)
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			fmt.Printf("%v\r\n", err)
+		}
+	}(resp.Body)
 	return
 }
 
@@ -77,8 +83,10 @@ func SendData(data *storage.MetricsState) {
 }
 
 func main() {
-	pollInterval := time.Duration(2) * time.Second
-	reportInterval := time.Duration(8) * time.Second
+	parseFlags()
+
+	pollInterval := time.Duration(agentOptions.pollInterval) * time.Second
+	reportInterval := time.Duration(agentOptions.reportInterval) * time.Second
 	state := storage.NewMetricsState()
 
 	for {

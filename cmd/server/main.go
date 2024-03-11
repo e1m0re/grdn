@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/go-chi/chi/v5"
 
 	"github.com/e1m0re/grdn/internal/storage"
 )
@@ -50,9 +51,12 @@ func updateMetricHandler(response http.ResponseWriter, request *http.Request) {
 	}
 }
 
-func mainPageHandler(response http.ResponseWriter, request *http.Request) {
+func mainPageHandler(response http.ResponseWriter, _ *http.Request) {
 	for _, value := range store.GetAllMetrics() {
-		fmt.Fprintf(response, "%s\r\n", value)
+		_, err := fmt.Fprintf(response, "%s\r\n", value)
+		if err != nil {
+			fmt.Printf("%v\r\n", err)
+		}
 	}
 }
 
@@ -62,7 +66,10 @@ func getMetricValueHandler(response http.ResponseWriter, request *http.Request) 
 		response.WriteHeader(http.StatusNotFound)
 	}
 
-	response.Write([]byte(value))
+	_, err = response.Write([]byte(value))
+	if err != nil {
+		fmt.Printf("%v\r\n", err)
+	}
 }
 
 func AppRouter() chi.Router {
@@ -74,6 +81,10 @@ func AppRouter() chi.Router {
 	})
 	return router
 }
+
 func main() {
-	log.Fatal(http.ListenAndServe(`localhost:8080`, AppRouter()))
+	parseFlags()
+
+	fmt.Println("Running server on", flagRunAddr)
+	log.Fatal(http.ListenAndServe(flagRunAddr, AppRouter()))
 }
