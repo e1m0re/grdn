@@ -1,8 +1,8 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
-	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -57,13 +57,16 @@ func sendMetric(mType string, mName string, mValue string) (err error) {
 		Host:   agentOptions.flagRunAddr,
 		Path:   fmt.Sprintf("/update/%s/%s/%s", mType, mName, mValue),
 	}
-	resp, err := http.Post(u.String(), "text/plan", nil)
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			fmt.Printf("%v\r\n", err)
-		}
-	}(resp.Body)
+
+	var buf []byte
+	responseBody := bytes.NewBuffer(buf)
+	resp, err := http.Post(u.String(), "text/plan", responseBody)
+	if err != nil {
+		return
+	}
+
+	defer resp.Body.Close()
+
 	return
 }
 

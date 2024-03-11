@@ -1,10 +1,18 @@
 package main
 
-import "flag"
+import (
+	"flag"
+	"os"
+)
 
 var flagRunAddr string
 
 func parseFlags() {
-	flag.StringVar(&flagRunAddr, "a", "localhost:8080", "address and port to run server")
+	var defaultA = "localhost:8080"
+	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
+		defaultA = envRunAddr
+	}
+
+	flag.StringVar(&flagRunAddr, "a", defaultA, "address and port to run server")
 	flag.Parse()
 }

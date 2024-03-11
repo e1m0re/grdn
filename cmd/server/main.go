@@ -26,11 +26,6 @@ func updateMetricHandler(response http.ResponseWriter, request *http.Request) {
 	}
 
 	mName := chi.URLParam(request, "mName")
-	if !store.IsValidMetricName(mType, mName) {
-		response.WriteHeader(http.StatusNotFound)
-		return
-	}
-
 	mValue := chi.URLParam(request, "mValue")
 
 	switch mType {

@@ -3,6 +3,7 @@ package storage
 import (
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 type MetricsType = string
@@ -94,16 +95,6 @@ func NewMemStorage() *MemStorage {
 	}
 }
 
-func (s *MemStorage) IsValidMetricName(mType MetricsType, value string) bool {
-	if mType == GaugeType {
-		return IsValidGaugeName(value)
-	}
-	if mType == CounterType {
-		return IsValidCounterName(value)
-	}
-	return false
-}
-
 func (s *MemStorage) UpdateGaugeMetric(name GaugeName, value GaugeDateType) {
 	s.Gauges[name] = value
 }
@@ -113,9 +104,9 @@ func (s *MemStorage) UpdateCounterMetric(name CounterName, value CounterDateType
 }
 
 func (s *MemStorage) GetAllMetrics() []string {
-	result := []string{}
+	var result []string
 	for key, value := range s.Gauges {
-		result = append(result, fmt.Sprintf("%s: %v", key, value))
+		result = append(result, fmt.Sprintf("%s: %s", key, strconv.FormatFloat(value, 'f', -1, 64)))
 	}
 	for key, value := range s.Counters {
 		result = append(result, fmt.Sprintf("%s: %v", key, value))
@@ -127,13 +118,13 @@ func (s *MemStorage) GetAllMetrics() []string {
 func (s *MemStorage) GetMetricValue(mType MetricsType, mName string) (string, error) {
 	switch mType {
 	case GaugeType:
-		if IsValidGaugeName(mName) {
-			return fmt.Sprintf("%f", s.Gauges[mName]), nil
+		if value, ok := s.Gauges[mName]; ok {
+			return strconv.FormatFloat(value, 'f', -1, 64), nil
 		}
 		return "", errors.New("unknown metric")
 	case CounterType:
-		if IsValidCounterName(mName) {
-			return fmt.Sprintf("%d", s.Counters[mName]), nil
+		if value, ok := s.Counters[mName]; ok {
+			return fmt.Sprintf("%d", value), nil
 		}
 		return "", errors.New("unknown metric")
 	default:
