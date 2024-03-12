@@ -14,6 +14,7 @@ func Test_updateMetricHandler(t *testing.T) {
 		method string
 		path   string
 	}
+
 	tests := []struct {
 		name         string
 		args         args

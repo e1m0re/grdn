@@ -1,126 +1,11 @@
 package storage
 
 import (
-	"reflect"
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-func TestIsValidCounterName(t *testing.T) {
-	type args struct {
-		value string
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		{
-			name: "test PollCount",
-			args: args{value: "PollCount"},
-			want: true,
-		},
-		{
-			name: "test empty string",
-			args: args{value: ""},
-			want: false,
-		},
-		{
-			name: "test Invalid name",
-			args: args{value: "Invalid name"},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, IsValidCounterName(tt.args.value))
-		})
-	}
-}
-
-func TestIsValidGuageName(t *testing.T) {
-	type args struct {
-		value string
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		{
-			name: "test Alloc",
-			args: args{value: "Alloc"},
-			want: true,
-		},
-		{
-			name: "test BuckHashSys",
-			args: args{value: "BuckHashSys"},
-			want: true,
-		},
-		{
-			name: "test empty string",
-			args: args{value: ""},
-			want: false,
-		},
-		{
-			name: "test Invalid name",
-			args: args{value: "Invalid name"},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, IsValidGaugeName(tt.args.value))
-		})
-	}
-}
-
-func TestIsValidMetricsType(t *testing.T) {
-	type args struct {
-		value string
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		{
-			name: "test Guage => true",
-			args: args{
-				value: GaugeType,
-			},
-			want: true,
-		},
-		{
-			name: "test Counter => true",
-			args: args{
-				value: CounterType,
-			},
-			want: true,
-		},
-		{
-			name: "test empty string",
-			args: args{
-				value: "",
-			},
-			want: false,
-		},
-		{
-			name: "test invalid type",
-			args: args{
-				value: "Invalid type",
-			},
-			want: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, IsValidMetricsType(tt.args.value))
-		})
-	}
-}
 
 func TestMemStorage_UpdateCounterMetric(t *testing.T) {
 	type fields struct {
@@ -131,6 +16,7 @@ func TestMemStorage_UpdateCounterMetric(t *testing.T) {
 		name  CounterName
 		value CounterDateType
 	}
+
 	tests := []struct {
 		name   string
 		args   args
@@ -174,6 +60,7 @@ func TestMemStorage_UpdateGuageMetric(t *testing.T) {
 		name  GaugeName
 		value GaugeDateType
 	}
+
 	tests := []struct {
 		name   string
 		args   args
@@ -230,18 +117,147 @@ func TestNewMemStorage(t *testing.T) {
 	}
 }
 
-func TestNewMetricsState(t *testing.T) {
+func TestMemStorage_UpdateMetricValue(t *testing.T) {
+	type fields struct {
+		Gauges   map[GaugeName]GaugeDateType
+		Counters map[CounterName]CounterDateType
+	}
+	type args struct {
+		mType  MetricsType
+		mName  string
+		mValue string
+	}
+	type want struct {
+		store fields
+		err   string
+	}
+
 	tests := []struct {
-		name string
-		want *MetricsState
+		name   string
+		fields fields
+		args   args
+		want   want
 	}{
-		// TODO: Add test cases.
+		{
+			name: "test success update gauge metric",
+			fields: fields{
+				Gauges:   make(map[GaugeName]GaugeDateType),
+				Counters: make(map[CounterName]CounterDateType),
+			},
+			args: args{
+				mType:  "gauge",
+				mName:  "metric",
+				mValue: "123.123",
+			},
+			want: want{
+				store: fields{
+					Gauges: map[GaugeName]GaugeDateType{
+						"metric": 123.123,
+					},
+					Counters: make(map[CounterName]CounterDateType),
+				},
+				err: "",
+			},
+		},
+		{
+			name: "test success update counter metric",
+			fields: fields{
+				Gauges:   make(map[GaugeName]GaugeDateType),
+				Counters: make(map[CounterName]CounterDateType),
+			},
+			args: args{
+				mType:  "counter",
+				mName:  "metric",
+				mValue: "123",
+			},
+			want: want{
+				store: fields{
+					Gauges: make(map[GaugeName]GaugeDateType),
+					Counters: map[CounterName]CounterDateType{
+						"metric": 123,
+					},
+				},
+				err: "",
+			},
+		},
+		{
+			name: "test update invalid type metric",
+			fields: fields{
+				Gauges:   make(map[GaugeName]GaugeDateType),
+				Counters: make(map[CounterName]CounterDateType),
+			},
+			args: args{
+				mType:  "new_counter",
+				mName:  "metric",
+				mValue: "123",
+			},
+			want: want{
+				store: fields{
+					Gauges:   make(map[GaugeName]GaugeDateType),
+					Counters: make(map[CounterName]CounterDateType),
+				},
+				err: "unknown metric type",
+			},
+		},
+		{
+			name: "test update gauge metric with invalid value",
+			fields: fields{
+				Gauges:   make(map[GaugeName]GaugeDateType),
+				Counters: make(map[CounterName]CounterDateType),
+			},
+			args: args{
+				mType:  "gauge",
+				mName:  "metric",
+				mValue: "qwerty",
+			},
+			want: want{
+				store: fields{
+					Gauges:   make(map[GaugeName]GaugeDateType),
+					Counters: make(map[CounterName]CounterDateType),
+				},
+				err: "strconv.ParseFloat: parsing \"qwerty\": invalid syntax",
+			},
+		},
+		{
+			name: "test update counter metric with invalid value",
+			fields: fields{
+				Gauges:   make(map[GaugeName]GaugeDateType),
+				Counters: make(map[CounterName]CounterDateType),
+			},
+			args: args{
+				mType:  "counter",
+				mName:  "metric",
+				mValue: "qwerty",
+			},
+			want: want{
+				store: fields{
+					Gauges:   make(map[GaugeName]GaugeDateType),
+					Counters: make(map[CounterName]CounterDateType),
+				},
+				err: "strconv.ParseInt: parsing \"qwerty\": invalid syntax",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewMetricsState(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewMetricsState() = %v, want %v", got, tt.want)
+			s := &MemStorage{
+				Gauges:   tt.fields.Gauges,
+				Counters: tt.fields.Counters,
 			}
+
+			err := s.UpdateMetricValue(tt.args.mType, tt.args.mName, tt.args.mValue)
+			if tt.want.err == "" {
+				require.NoError(t, err)
+				assert.Equal(t, tt.want.store.Gauges, s.Gauges)
+				assert.Equal(t, tt.want.store.Counters, s.Counters)
+
+				return
+			}
+
+			require.Error(t, err)
+			assert.EqualError(t, err, tt.want.err)
+			assert.Equal(t, tt.want.store.Gauges, s.Gauges)
+			assert.Equal(t, tt.want.store.Counters, s.Counters)
 		})
 	}
 }

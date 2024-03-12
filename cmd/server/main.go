@@ -2,11 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
-	"strconv"
-
-	"github.com/go-chi/chi/v5"
 
 	"github.com/e1m0re/grdn/internal/storage"
 )
@@ -20,29 +18,13 @@ func updateMetricHandler(response http.ResponseWriter, request *http.Request) {
 	}
 
 	mType := chi.URLParam(request, "mType")
-	if !storage.IsValidMetricsType(mType) {
-		response.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
 	mName := chi.URLParam(request, "mName")
 	mValue := chi.URLParam(request, "mValue")
 
-	switch mType {
-	case storage.GaugeType:
-		value, err := strconv.ParseFloat(mValue, 64)
-		if err != nil {
-			response.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		store.UpdateGaugeMetric(mName, value)
-	case storage.CounterType:
-		value, err := strconv.ParseInt(mValue, 10, 64)
-		if err != nil {
-			response.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		store.UpdateCounterMetric(mName, value)
+	err := store.UpdateMetricValue(mType, mName, mValue)
+	if err != nil {
+		response.WriteHeader(http.StatusBadRequest)
+		return
 	}
 }
 
@@ -74,7 +56,9 @@ func AppRouter() chi.Router {
 		router.Get("/value/{mType}/{mName}", getMetricValueHandler)
 		router.Post("/update/{mType}/{mName}/{mValue}", updateMetricHandler)
 	})
+
 	return router
+
 }
 
 func main() {

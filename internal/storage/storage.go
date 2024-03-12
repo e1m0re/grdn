@@ -13,15 +13,6 @@ const (
 	CounterType = MetricsType("counter")
 )
 
-func IsValidMetricsType(value string) bool {
-	switch value {
-	case GaugeType, CounterType:
-		return true
-	default:
-		return false
-	}
-}
-
 type GaugeDateType = float64
 type GaugeName = string
 
@@ -56,32 +47,12 @@ const (
 	RandomValue   = GaugeName("RandomValue")
 )
 
-func IsValidGaugeName(value string) bool {
-	switch value {
-	case Alloc, BuckHashSys, Frees, GCCPUFraction, GCSys, HeapAlloc, HeapIdle, HeapInuse, HeapObjects, HeapReleased,
-		HeapSys, LastGC, Lookups, MCacheInuse, MCacheSys, MSpanInuse, MSpanSys, Mallocs, NextGC, NumForcedGC, NumGC,
-		OtherSys, PauseTotalNs, StackInuse, StackSys, Sys, TotalAlloc, RandomValue:
-		return true
-	default:
-		return false
-	}
-}
-
 type CounterDateType = int64
 type CounterName = string
 
 const (
 	PollCount = CounterName("PollCount")
 )
-
-func IsValidCounterName(value string) bool {
-	switch value {
-	case PollCount:
-		return true
-	}
-
-	return false
-}
 
 type MemStorage struct {
 	Gauges   map[GaugeName]GaugeDateType
@@ -103,11 +74,35 @@ func (s *MemStorage) UpdateCounterMetric(name CounterName, value CounterDateType
 	s.Counters[name] += value
 }
 
+func (s *MemStorage) UpdateMetricValue(mType MetricsType, mName string, mValue string) error {
+	switch mType {
+	case GaugeType:
+		value, err := strconv.ParseFloat(mValue, 64)
+		if err != nil {
+			return err
+		}
+
+		s.UpdateGaugeMetric(mName, value)
+	case CounterType:
+		value, err := strconv.ParseInt(mValue, 10, 64)
+		if err != nil {
+			return err
+		}
+
+		s.UpdateCounterMetric(mName, value)
+	default:
+		return errors.New("unknown metric type")
+	}
+
+	return nil
+}
+
 func (s *MemStorage) GetAllMetrics() []string {
 	var result []string
 	for key, value := range s.Gauges {
 		result = append(result, fmt.Sprintf("%s: %s", key, strconv.FormatFloat(value, 'f', -1, 64)))
 	}
+
 	for key, value := range s.Counters {
 		result = append(result, fmt.Sprintf("%s: %v", key, value))
 	}
@@ -121,25 +116,12 @@ func (s *MemStorage) GetMetricValue(mType MetricsType, mName string) (string, er
 		if value, ok := s.Gauges[mName]; ok {
 			return strconv.FormatFloat(value, 'f', -1, 64), nil
 		}
-		return "", errors.New("unknown metric")
 	case CounterType:
 		if value, ok := s.Counters[mName]; ok {
 			return fmt.Sprintf("%d", value), nil
 		}
-		return "", errors.New("unknown metric")
-	default:
-		return "", errors.New("unknown metric")
 	}
-}
 
-type MetricsState struct {
-	Gauges   map[GaugeName]GaugeDateType
-	Counters map[CounterName]CounterDateType
-}
+	return "", errors.New("unknown metric")
 
-func NewMetricsState() *MetricsState {
-	return &MetricsState{
-		Gauges:   make(map[GaugeName]GaugeDateType),
-		Counters: make(map[CounterName]CounterDateType),
-	}
 }
