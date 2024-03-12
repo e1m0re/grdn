@@ -34,6 +34,7 @@ func (m *MetricsMonitor) UpdateData() {
 
 	// memory metrics
 	var rtm runtime.MemStats
+
 	runtime.ReadMemStats(&rtm)
 	m.data.Gauges[storage.Alloc] = storage.GaugeDateType(rtm.Alloc)
 	m.data.Gauges[storage.BuckHashSys] = storage.GaugeDateType(rtm.BuckHashSys)
