@@ -19,9 +19,9 @@ github.com/e1m0re/grdn/cmd/agent/main.go:51.6,56.3 4 0
 github.com/e1m0re/grdn/cmd/server/flags.go:10.19,12.58 2 0
 github.com/e1m0re/grdn/cmd/server/flags.go:12.58,14.3 1 0
 github.com/e1m0re/grdn/cmd/server/flags.go:16.2,17.14 2 0
-github.com/e1m0re/grdn/cmd/server/main.go:14.79,15.39 1 6
+github.com/e1m0re/grdn/cmd/server/main.go:14.79,15.39 1 8
 github.com/e1m0re/grdn/cmd/server/main.go:15.39,18.3 2 1
-github.com/e1m0re/grdn/cmd/server/main.go:20.2,25.16 5 5
+github.com/e1m0re/grdn/cmd/server/main.go:20.2,25.16 5 7
 github.com/e1m0re/grdn/cmd/server/main.go:25.16,28.3 2 5
 github.com/e1m0re/grdn/cmd/server/main.go:31.69,32.46 1 0
 github.com/e1m0re/grdn/cmd/server/main.go:32.46,34.17 2 0
