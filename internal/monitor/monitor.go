@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"runtime"
 
+	"github.com/e1m0re/grdn/internal/apiclient"
 	"github.com/e1m0re/grdn/internal/storage"
 )
 
@@ -90,4 +91,13 @@ func (m *MetricsMonitor) GetData() []GlobalMetricsList {
 	}
 
 	return result
+}
+
+func (m *MetricsMonitor) SendDataToServers(api *apiclient.API) {
+	for _, row := range m.GetData() {
+		_, err := api.DoRequest(fmt.Sprintf("/update/%s/%s/%s", row.MType, row.MName, row.MValue))
+		if err != nil {
+			fmt.Printf("%v\r\n", err)
+		}
+	}
 }
