@@ -1,13 +1,15 @@
-package main
+package srvhandler
 
 import (
 	"context"
-	"github.com/go-chi/chi/v5"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/e1m0re/grdn/internal/storage"
 )
 
 func Test_updateMetricHandler(t *testing.T) {
@@ -116,6 +118,11 @@ func Test_updateMetricHandler(t *testing.T) {
 			expectedCode: http.StatusOK,
 		},
 	}
+
+	store := storage.NewMemStorage()
+	h := &Handler{}
+	handler := h.UpdateMetric(store)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.args.method, tt.args.path, nil)
@@ -128,7 +135,7 @@ func Test_updateMetricHandler(t *testing.T) {
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
 
-			updateMetricHandler(response, request)
+			handler.ServeHTTP(response, request)
 			assert.Equal(t, tt.expectedCode, response.Code)
 		})
 	}
