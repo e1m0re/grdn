@@ -11,7 +11,7 @@ import (
 
 type Handler struct{}
 
-func (h *Handler) UpdateMetric(store *storage.MemStorage) http.HandlerFunc {
+func (h *Handler) UpdateMetric(response http.ResponseWriter, request *http.Request) {
 	return func(response http.ResponseWriter, request *http.Request) {
 		if request.Method != http.MethodPost {
 			http.Error(response, "Method not allowed", http.StatusMethodNotAllowed)
