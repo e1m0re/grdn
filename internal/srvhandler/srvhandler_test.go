@@ -120,8 +120,7 @@ func Test_updateMetricHandler(t *testing.T) {
 	}
 
 	store := storage.NewMemStorage()
-	h := &Handler{}
-	handler := h.UpdateMetric(store)
+	handler := http.HandlerFunc(NewHandler(store).UpdateMetric)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

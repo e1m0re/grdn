@@ -1,9 +1,11 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 
@@ -12,17 +14,25 @@ import (
 )
 
 func main() {
-	parseFlags()
+	var serverAddr string
+
+	flag.StringVar(&serverAddr, "a", "localhost:8080", "address and port to run server")
+
+	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
+		serverAddr = envRunAddr
+	}
+
+	flag.Parse()
 
 	store := storage.NewMemStorage()
-	handler := srvhandler.Handler{}
+	handler := srvhandler.NewHandler(store)
 	router := chi.NewRouter()
 	router.Route("/", func(r chi.Router) {
-		router.Get("/", handler.GetMainPage(store))
-		router.Get("/value/{mType}/{mName}", handler.GetMetricValue(store))
-		router.Post("/update/{mType}/{mName}/{mValue}", handler.UpdateMetric(store))
+		router.Get("/", handler.GetMainPage)
+		router.Get("/value/{mType}/{mName}", handler.GetMetricValue)
+		router.Post("/update/{mType}/{mName}/{mValue}", handler.UpdateMetric)
 	})
 
-	fmt.Println("Running server on", flagRunAddr)
-	log.Fatal(http.ListenAndServe(flagRunAddr, router))
+	fmt.Println("Running server on ", serverAddr)
+	log.Fatal(http.ListenAndServe(serverAddr, router))
 }
