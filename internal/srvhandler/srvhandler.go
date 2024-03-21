@@ -1,11 +1,14 @@
 package srvhandler
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/e1m0re/grdn/internal/models"
 	"github.com/e1m0re/grdn/internal/storage"
 )
 
@@ -46,13 +49,93 @@ func (h *Handler) GetMainPage(response http.ResponseWriter, _ *http.Request) {
 }
 
 func (h *Handler) GetMetricValue(response http.ResponseWriter, request *http.Request) {
-	value, err := h.store.GetMetricValue(chi.URLParam(request, "mType"), chi.URLParam(request, "mName"))
-	if err != nil {
-		response.WriteHeader(http.StatusNotFound)
+	if request.Method != http.MethodGet {
+		http.Error(response, "Method not allowed", http.StatusMethodNotAllowed)
+		return
 	}
 
-	_, err = response.Write([]byte(value))
+	metric, err := h.store.GetMetric(chi.URLParam(request, "mType"), chi.URLParam(request, "mName"))
 	if err != nil {
-		fmt.Printf("%v\r\n", err)
+		http.Error(response, "Not found.", http.StatusNotFound)
+		return
+	}
+
+	_, err = response.Write([]byte(metric.ValueToString()))
+	if err != nil {
+		http.Error(response, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *Handler) GetMetricValueV2(response http.ResponseWriter, request *http.Request) {
+	if request.Method != http.MethodPost {
+		http.Error(response, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var buf bytes.Buffer
+
+	_, err := buf.ReadFrom(request.Body)
+
+	if err != nil {
+		http.Error(response, err.Error(), http.StatusBadRequest)
+	}
+
+	var reqData models.Metrics
+
+	if err = json.Unmarshal(buf.Bytes(), &reqData); err != nil {
+		http.Error(response, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	metric, err := h.store.GetMetric(reqData.MType, reqData.ID)
+
+	if err != nil {
+		http.Error(response, "Not found.", http.StatusNotFound)
+		return
+	}
+
+	respContent, err := json.Marshal(metric)
+
+	if err != nil {
+		http.Error(response, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response.Header().Set("Content-Type", "application/json")
+	_, err = response.Write(respContent)
+
+	if err != nil {
+		http.Error(response, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *Handler) UpdateMetrics(response http.ResponseWriter, request *http.Request) {
+	if request.Method != http.MethodPost {
+		http.Error(response, "Method not allowed.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var data models.Metrics
+
+	var buf bytes.Buffer
+
+	_, err := buf.ReadFrom(request.Body)
+
+	if err != nil {
+		http.Error(response, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err = json.Unmarshal(buf.Bytes(), &data); err != nil {
+		http.Error(response, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = h.store.UpdateMetricValueV2(data)
+	if err != nil {
+		response.WriteHeader(http.StatusBadRequest)
+		return
 	}
 }

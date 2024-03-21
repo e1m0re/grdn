@@ -17,14 +17,12 @@ func NewAPI(baseURL string) *API {
 	}
 }
 
-func (api *API) DoRequest(path string) ([]byte, error) {
-	var buf []byte
-	responseBody := bytes.NewBuffer(buf)
+func (api *API) DoRequest(path string, body *[]byte) error {
 
-	resp, err := api.client.Post(api.baseURL+path, "text/plain", responseBody)
+	resp, err := api.client.Post(api.baseURL+path, "text/plain", bytes.NewBuffer(*body))
 	if err == nil {
 		defer resp.Body.Close()
 	}
 
-	return buf, err
+	return err
 }

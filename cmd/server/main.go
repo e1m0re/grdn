@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/e1m0re/grdn/internal/logger"
 	"github.com/e1m0re/grdn/internal/srvhandler"
 	"github.com/e1m0re/grdn/internal/storage"
 )
@@ -16,7 +17,10 @@ import (
 func main() {
 	var serverAddr string
 
+	var verboseMode bool
+
 	flag.StringVar(&serverAddr, "a", "localhost:8080", "address and port to run server")
+	flag.BoolVar(&verboseMode, "v", false, "Torn on extended logging mode")
 
 	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
 		serverAddr = envRunAddr
@@ -24,13 +28,30 @@ func main() {
 
 	flag.Parse()
 
+	loggerLevel := "info"
+	if verboseMode {
+		loggerLevel = "debug"
+	}
+
+	if err := logger.Initialize(loggerLevel); err != nil {
+		fmt.Print(err)
+		return
+	}
+
 	store := storage.NewMemStorage()
 	handler := srvhandler.NewHandler(store)
 	router := chi.NewRouter()
+	router.Use(logger.RequestLogger)
 	router.Route("/", func(r chi.Router) {
-		router.Get("/", handler.GetMainPage)
-		router.Get("/value/{mType}/{mName}", handler.GetMetricValue)
-		router.Post("/update/{mType}/{mName}/{mValue}", handler.UpdateMetric)
+		r.Get("/", handler.GetMainPage)
+		r.Route("/value", func(r chi.Router) {
+			r.Post("/", handler.GetMetricValueV2)
+			r.Get("/{mType}/{mName}", handler.GetMetricValue)
+		})
+		r.Route("/update", func(r chi.Router) {
+			r.Post("/", handler.UpdateMetrics)
+			r.Post("/{mType}/{mName}/{mValue}", handler.UpdateMetric)
+		})
 	})
 
 	fmt.Println("Running server on ", serverAddr)
