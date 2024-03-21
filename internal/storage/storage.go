@@ -4,13 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-)
 
-type MetricsType = string
-
-const (
-	GaugeType   = MetricsType("gauge")
-	CounterType = MetricsType("counter")
+	"github.com/e1m0re/grdn/internal/models"
 )
 
 type GaugeDateType = float64
@@ -74,22 +69,44 @@ func (s *MemStorage) UpdateCounterMetric(name CounterName, value CounterDateType
 	s.Counters[name] += value
 }
 
-func (s *MemStorage) UpdateMetricValue(mType MetricsType, mName string, mValue string) error {
+func (s *MemStorage) UpdateMetricValue(mType models.MetricsType, mName string, mValue string) error {
 	switch mType {
-	case GaugeType:
+	case models.GaugeType:
 		value, err := strconv.ParseFloat(mValue, 64)
 		if err != nil {
 			return err
 		}
 
 		s.UpdateGaugeMetric(mName, value)
-	case CounterType:
+	case models.CounterType:
 		value, err := strconv.ParseInt(mValue, 10, 64)
 		if err != nil {
 			return err
 		}
 
 		s.UpdateCounterMetric(mName, value)
+	default:
+		return errors.New("unknown metric type")
+	}
+
+	return nil
+}
+
+func (s *MemStorage) UpdateMetricValueV2(data models.Metrics) error {
+	if len(data.ID) == 0 {
+		return errors.New("invalid metrics name")
+	}
+	switch data.MType {
+	case models.GaugeType:
+		if data.Value == nil {
+			return errors.New("invalid value")
+		}
+		s.UpdateGaugeMetric(data.ID, *data.Value)
+	case models.CounterType:
+		if data.Delta == nil {
+			return errors.New("invalid value")
+		}
+		s.UpdateCounterMetric(data.ID, *data.Delta)
 	default:
 		return errors.New("unknown metric type")
 	}
@@ -110,18 +127,39 @@ func (s *MemStorage) GetAllMetrics() []string {
 	return result
 }
 
-func (s *MemStorage) GetMetricValue(mType MetricsType, mName string) (string, error) {
+func (s *MemStorage) GetMetric(mType models.MetricsType, mName string) (metric *models.Metrics, err error) {
 	switch mType {
-	case GaugeType:
-		if value, ok := s.Gauges[mName]; ok {
-			return strconv.FormatFloat(value, 'f', -1, 64), nil
+	case models.GaugeType:
+		value, ok := s.Gauges[mName]
+
+		if !ok {
+			err = errors.New("unknown metric")
+			return nil, err
 		}
-	case CounterType:
-		if value, ok := s.Counters[mName]; ok {
-			return fmt.Sprintf("%d", value), nil
+
+		metric = &models.Metrics{
+			ID:    mName,
+			MType: models.GaugeType,
+			Delta: nil,
+			Value: &value,
 		}
+	case models.CounterType:
+		delta, ok := s.Counters[mName]
+
+		if !ok {
+			err = errors.New("unknown metric")
+			return nil, err
+		}
+
+		metric = &models.Metrics{
+			ID:    mName,
+			MType: models.CounterType,
+			Delta: &delta,
+			Value: nil,
+		}
+	default:
+		err = errors.New("unknown metric")
 	}
 
-	return "", errors.New("unknown metric")
-
+	return
 }

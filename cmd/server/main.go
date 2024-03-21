@@ -43,9 +43,15 @@ func main() {
 	router := chi.NewRouter()
 	router.Use(logger.RequestLogger)
 	router.Route("/", func(r chi.Router) {
-		router.Get("/", handler.GetMainPage)
-		router.Get("/value/{mType}/{mName}", handler.GetMetricValue)
-		router.Post("/update/{mType}/{mName}/{mValue}", handler.UpdateMetric)
+		r.Get("/", handler.GetMainPage)
+		r.Route("/value", func(r chi.Router) {
+			r.Post("/", handler.GetMetricValueV2)
+			r.Get("/{mType}/{mName}", handler.GetMetricValue)
+		})
+		r.Route("/update", func(r chi.Router) {
+			r.Post("/", handler.UpdateMetrics)
+			r.Post("/{mType}/{mName}/{mValue}", handler.UpdateMetric)
+		})
 	})
 
 	fmt.Println("Running server on ", serverAddr)
