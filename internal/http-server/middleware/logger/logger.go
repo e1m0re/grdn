@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+
+	"github.com/e1m0re/grdn/internal/logger"
 )
 
 type (
@@ -31,7 +33,7 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode
 }
 
-func RequestLogger(next http.Handler) http.Handler {
+func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(
 		func(writer http.ResponseWriter, request *http.Request) {
 			start := time.Now()
@@ -48,7 +50,7 @@ func RequestLogger(next http.Handler) http.Handler {
 			next.ServeHTTP(&lw, request)
 
 			duration := time.Since(start)
-			Log.Debug("Incoming request",
+			logger.Log.Debug("Incoming request",
 				zap.String("method", request.Method),
 				zap.String("path", request.URL.Path),
 				zap.Int("status", responseData.status),

@@ -1,4 +1,4 @@
-package srvhandler
+package handler
 
 import (
 	"bytes"
@@ -40,12 +40,16 @@ func (h *Handler) UpdateMetric(response http.ResponseWriter, request *http.Reque
 }
 
 func (h *Handler) GetMainPage(response http.ResponseWriter, _ *http.Request) {
+	response.Header().Set("Content-Type", "text/html")
+
 	for _, value := range h.store.GetAllMetrics() {
 		_, err := fmt.Fprintf(response, "%s\r\n", value)
 		if err != nil {
 			fmt.Printf("%v\r\n", err)
 		}
 	}
+
+	response.WriteHeader(http.StatusOK)
 }
 
 func (h *Handler) GetMetricValue(response http.ResponseWriter, request *http.Request) {
@@ -60,11 +64,15 @@ func (h *Handler) GetMetricValue(response http.ResponseWriter, request *http.Req
 		return
 	}
 
+	response.Header().Set("Content-Type", "text/html")
 	_, err = response.Write([]byte(metric.ValueToString()))
+
 	if err != nil {
 		http.Error(response, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	response.WriteHeader(http.StatusOK)
 }
 
 func (h *Handler) GetMetricValueV2(response http.ResponseWriter, request *http.Request) {
@@ -109,6 +117,8 @@ func (h *Handler) GetMetricValueV2(response http.ResponseWriter, request *http.R
 		http.Error(response, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	response.WriteHeader(http.StatusOK)
 }
 
 func (h *Handler) UpdateMetrics(response http.ResponseWriter, request *http.Request) {

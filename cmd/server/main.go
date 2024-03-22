@@ -1,47 +1,27 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/e1m0re/grdn/internal/http-server/handler"
+	gzipMiddleware "github.com/e1m0re/grdn/internal/http-server/middleware/gzip"
+	loggerMiddleware "github.com/e1m0re/grdn/internal/http-server/middleware/logger"
 	"github.com/e1m0re/grdn/internal/logger"
-	"github.com/e1m0re/grdn/internal/srvhandler"
 	"github.com/e1m0re/grdn/internal/storage"
 )
 
-func main() {
-	var serverAddr string
-
-	var verboseMode bool
-
-	flag.StringVar(&serverAddr, "a", "localhost:8080", "address and port to run server")
-	flag.BoolVar(&verboseMode, "v", false, "Torn on extended logging mode")
-
-	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
-		serverAddr = envRunAddr
-	}
-
-	flag.Parse()
-
-	loggerLevel := "info"
-	if verboseMode {
-		loggerLevel = "debug"
-	}
-
-	if err := logger.Initialize(loggerLevel); err != nil {
-		fmt.Print(err)
-		return
-	}
-
-	store := storage.NewMemStorage()
-	handler := srvhandler.NewHandler(store)
+func initRouter(handler *handler.Handler) *chi.Mux {
 	router := chi.NewRouter()
-	router.Use(logger.RequestLogger)
+
+	router.Use(loggerMiddleware.Middleware)
+	router.Use(gzipMiddleware.Middleware)
+	router.Use(middleware.Compress(5, "text/html", "application/json"))
+
 	router.Route("/", func(r chi.Router) {
 		r.Get("/", handler.GetMainPage)
 		r.Route("/value", func(r chi.Router) {
@@ -54,6 +34,19 @@ func main() {
 		})
 	})
 
-	fmt.Println("Running server on ", serverAddr)
-	log.Fatal(http.ListenAndServe(serverAddr, router))
+	return router
+}
+func main() {
+	parameters := config()
+
+	if err := logger.Initialize(parameters.loggerLevel); err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	store := storage.NewMemStorage()
+	router := initRouter(handler.NewHandler(store))
+
+	fmt.Println("Running server on ", parameters.serverAddr)
+	log.Fatal(http.ListenAndServe(parameters.serverAddr, router))
 }

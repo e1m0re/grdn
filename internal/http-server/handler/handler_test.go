@@ -1,4 +1,4 @@
-package srvhandler
+package handler
 
 import (
 	"context"
