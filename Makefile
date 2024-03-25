@@ -9,6 +9,3 @@ run-agent:
 
 run-server:
 	go run cmd/server/main.go cmd/server/flags.go
-
-debug-server:
-	go run cmd/server/main.go cmd/server/flags.go -v

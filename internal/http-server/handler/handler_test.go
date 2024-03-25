@@ -121,7 +121,7 @@ func TestHandler_updateMetricHandler(t *testing.T) {
 		},
 	}
 
-	store := storage.NewMemStorage()
+	store := storage.NewMemStorage(false, "")
 	handler := http.HandlerFunc(NewHandler(store).UpdateMetric)
 
 	for _, tt := range tests {
@@ -164,7 +164,7 @@ func TestHandler_UpdateMetrics(t *testing.T) {
 	}{
 		{
 			name:   "test invalid method",
-			fields: fields{store: storage.NewMemStorage()},
+			fields: fields{store: storage.NewMemStorage(false, "")},
 			args: args{
 				request: httptest.NewRequest(http.MethodGet, "/update", nil),
 			},
@@ -172,7 +172,7 @@ func TestHandler_UpdateMetrics(t *testing.T) {
 		},
 		{
 			name:   "test empty body",
-			fields: fields{store: storage.NewMemStorage()},
+			fields: fields{store: storage.NewMemStorage(false, "")},
 			args: args{
 				request: httptest.NewRequest(http.MethodPost, "/update", nil),
 			},
@@ -180,7 +180,7 @@ func TestHandler_UpdateMetrics(t *testing.T) {
 		},
 		{
 			name:   "test invalid body",
-			fields: fields{store: storage.NewMemStorage()},
+			fields: fields{store: storage.NewMemStorage(false, "")},
 			args: args{
 				request: httptest.NewRequest(http.MethodPost, "/update", strings.NewReader(`{123:123}`)),
 			},
@@ -188,7 +188,7 @@ func TestHandler_UpdateMetrics(t *testing.T) {
 		},
 		{
 			name:   "test body without ID",
-			fields: fields{store: storage.NewMemStorage()},
+			fields: fields{store: storage.NewMemStorage(false, "")},
 			args: args{
 				request: httptest.NewRequest(http.MethodPost, "/update", strings.NewReader(`{"type":"counter","delta":10}`)),
 			},
@@ -196,7 +196,7 @@ func TestHandler_UpdateMetrics(t *testing.T) {
 		},
 		{
 			name:   "test body invalid type",
-			fields: fields{store: storage.NewMemStorage()},
+			fields: fields{store: storage.NewMemStorage(false, "")},
 			args: args{
 				request: httptest.NewRequest(http.MethodPost, "/update", strings.NewReader(`{"id":"metric","type":"counter1","delta":10}`)),
 			},
@@ -204,7 +204,7 @@ func TestHandler_UpdateMetrics(t *testing.T) {
 		},
 		{
 			name:   "test body invalid gauge value 1",
-			fields: fields{store: storage.NewMemStorage()},
+			fields: fields{store: storage.NewMemStorage(false, "")},
 			args: args{
 				request: httptest.NewRequest(http.MethodPost, "/update", strings.NewReader(`{"id":"metric","type":"gauge"}`)),
 			},
@@ -212,7 +212,7 @@ func TestHandler_UpdateMetrics(t *testing.T) {
 		},
 		{
 			name:   "test body invalid gauge value 2",
-			fields: fields{store: storage.NewMemStorage()},
+			fields: fields{store: storage.NewMemStorage(false, "")},
 			args: args{
 				request: httptest.NewRequest(http.MethodPost, "/update", strings.NewReader(`{"id":"metric","type":"gauge","value":"10"}`)),
 			},
@@ -220,7 +220,7 @@ func TestHandler_UpdateMetrics(t *testing.T) {
 		},
 		{
 			name:   "test body invalid counter value 1",
-			fields: fields{store: storage.NewMemStorage()},
+			fields: fields{store: storage.NewMemStorage(false, "")},
 			args: args{
 				request: httptest.NewRequest(http.MethodPost, "/update", strings.NewReader(`{"id":"metric","type":"counter"}`)),
 			},
@@ -228,7 +228,7 @@ func TestHandler_UpdateMetrics(t *testing.T) {
 		},
 		{
 			name:   "test body invalid counter value 2",
-			fields: fields{store: storage.NewMemStorage()},
+			fields: fields{store: storage.NewMemStorage(false, "")},
 			args: args{
 				request: httptest.NewRequest(http.MethodPost, "/update", strings.NewReader(`{"id":"metric","type":"counter","delta":"10"}`)),
 			},
@@ -236,7 +236,7 @@ func TestHandler_UpdateMetrics(t *testing.T) {
 		},
 		{
 			name:   "test success update gauge metric",
-			fields: fields{store: storage.NewMemStorage()},
+			fields: fields{store: storage.NewMemStorage(false, "")},
 			args: args{
 				request: httptest.NewRequest(http.MethodPost, "/update", strings.NewReader(`{"id":"metric","type":"gauge","value":10.10}`)),
 			},
@@ -252,7 +252,7 @@ func TestHandler_UpdateMetrics(t *testing.T) {
 		},
 		{
 			name:   "test success update counter metric",
-			fields: fields{store: storage.NewMemStorage()},
+			fields: fields{store: storage.NewMemStorage(false, "")},
 			args: args{
 				request: httptest.NewRequest(http.MethodPost, "/update", strings.NewReader(`{"id":"metric","type":"counter","delta":10}`)),
 			},
@@ -309,7 +309,7 @@ func TestHandler_GetMetricValue(t *testing.T) {
 	}{
 		{
 			name:   "test invalid method",
-			fields: fields{store: storage.NewMemStorage()},
+			fields: fields{store: storage.NewMemStorage(false, "")},
 			args: args{
 				request:      httptest.NewRequest(http.MethodPost, "/value", nil),
 				routerParams: nil,
@@ -320,7 +320,7 @@ func TestHandler_GetMetricValue(t *testing.T) {
 		},
 		{
 			name:   "test invalid metric type",
-			fields: fields{store: storage.NewMemStorage()},
+			fields: fields{store: storage.NewMemStorage(false, "")},
 			args: args{
 				request:      httptest.NewRequest(http.MethodGet, "/value/something", nil),
 				routerParams: nil,
@@ -439,7 +439,7 @@ func TestHandler_GetMetricValueV2(t *testing.T) {
 	}{
 		{
 			name:   "test invalid method",
-			fields: fields{store: storage.NewMemStorage()},
+			fields: fields{store: storage.NewMemStorage(false, "")},
 			args:   args{request: httptest.NewRequest(http.MethodGet, "/value", nil)},
 			want: want{
 				statusCode: http.StatusMethodNotAllowed,
@@ -448,7 +448,7 @@ func TestHandler_GetMetricValueV2(t *testing.T) {
 		},
 		{
 			name:   "test invalid content",
-			fields: fields{store: storage.NewMemStorage()},
+			fields: fields{store: storage.NewMemStorage(false, "")},
 			args:   args{request: httptest.NewRequest(http.MethodPost, "/value", strings.NewReader("test"))},
 			want: want{
 				statusCode: http.StatusBadRequest,
@@ -457,7 +457,7 @@ func TestHandler_GetMetricValueV2(t *testing.T) {
 		},
 		{
 			name:   "test - metric not found",
-			fields: fields{store: storage.NewMemStorage()},
+			fields: fields{store: storage.NewMemStorage(false, "")},
 			args:   args{request: httptest.NewRequest(http.MethodPost, "/value", strings.NewReader(`{"ID":"metric","type":"gauge"}`))},
 			want: want{
 				statusCode: http.StatusNotFound,

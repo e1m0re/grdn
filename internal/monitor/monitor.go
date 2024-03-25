@@ -2,7 +2,7 @@ package monitor
 
 import (
 	"encoding/json"
-	"fmt"
+	"log/slog"
 	"math/rand"
 	"runtime"
 
@@ -94,12 +94,12 @@ func (m *MetricsMonitor) SendDataToServers(api *apiclient.API) {
 
 		content, err := json.Marshal(row)
 		if err != nil {
-			fmt.Println(err.Error())
+			slog.Error(err.Error())
 		}
 
 		err = api.DoRequest("/update", &content)
 		if err != nil {
-			fmt.Printf("%v\r\n", err)
+			slog.Error(err.Error())
 		}
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -45,7 +46,7 @@ func (h *Handler) GetMainPage(response http.ResponseWriter, _ *http.Request) {
 	for _, value := range h.store.GetAllMetrics() {
 		_, err := fmt.Fprintf(response, "%s\r\n", value)
 		if err != nil {
-			fmt.Printf("%v\r\n", err)
+			slog.Error(err.Error())
 		}
 	}
 
