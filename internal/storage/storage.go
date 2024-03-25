@@ -1,8 +1,10 @@
 package storage
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/e1m0re/grdn/internal/models"
@@ -52,12 +54,16 @@ const (
 type MemStorage struct {
 	Gauges   map[GaugeName]GaugeDateType
 	Counters map[CounterName]CounterDateType
+	syncMode bool
+	filePath string
 }
 
-func NewMemStorage() *MemStorage {
+func NewMemStorage(syncMode bool, filePath string) *MemStorage {
 	return &MemStorage{
 		Gauges:   make(map[GaugeName]GaugeDateType),
 		Counters: make(map[CounterName]CounterDateType),
+		syncMode: syncMode,
+		filePath: filePath,
 	}
 }
 
@@ -89,6 +95,13 @@ func (s *MemStorage) UpdateMetricValue(mType models.MetricsType, mName string, m
 		return errors.New("unknown metric type")
 	}
 
+	if s.syncMode {
+		err := s.DumpStorageToFile()
+		if err != nil {
+			fmt.Printf("error on save data to HDD: %s\n", err)
+		}
+	}
+
 	return nil
 }
 
@@ -109,6 +122,13 @@ func (s *MemStorage) UpdateMetricValueV2(data models.Metrics) error {
 		s.UpdateCounterMetric(data.ID, *data.Delta)
 	default:
 		return errors.New("unknown metric type")
+	}
+
+	if s.syncMode {
+		err := s.DumpStorageToFile()
+		if err != nil {
+			fmt.Printf("error on save data to HDD: %s\n", err)
+		}
 	}
 
 	return nil
@@ -162,4 +182,39 @@ func (s *MemStorage) GetMetric(mType models.MetricsType, mName string) (metric *
 	}
 
 	return
+}
+
+func (s *MemStorage) DumpStorageToFile() error {
+	file, err := os.OpenFile(s.filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	data, err := json.Marshal(s)
+	if err != nil {
+		return err
+	}
+
+	_, err = file.Write(data)
+
+	return err
+}
+
+func (s *MemStorage) LoadStorageFromFile() error {
+	file, err := os.ReadFile(s.filePath)
+	if err != nil {
+		return err
+	}
+
+	tmpData := &MemStorage{}
+	err = json.Unmarshal(file, &tmpData)
+
+	if err == nil {
+		s.Gauges = tmpData.Gauges
+		s.Counters = tmpData.Counters
+	}
+
+	return err
 }

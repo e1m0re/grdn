@@ -1,41 +1,20 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"log"
-	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"golang.org/x/sync/errgroup"
 
-	"github.com/e1m0re/grdn/internal/http-server/handler"
-	gzipMiddleware "github.com/e1m0re/grdn/internal/http-server/middleware/gzip"
-	loggerMiddleware "github.com/e1m0re/grdn/internal/http-server/middleware/logger"
+	"github.com/e1m0re/grdn/internal/http-server/server"
 	"github.com/e1m0re/grdn/internal/logger"
 	"github.com/e1m0re/grdn/internal/storage"
 )
 
-func initRouter(handler *handler.Handler) *chi.Mux {
-	router := chi.NewRouter()
-
-	router.Use(loggerMiddleware.Middleware)
-	router.Use(gzipMiddleware.Middleware)
-	router.Use(middleware.Compress(5, "text/html", "application/json"))
-
-	router.Route("/", func(r chi.Router) {
-		r.Get("/", handler.GetMainPage)
-		r.Route("/value", func(r chi.Router) {
-			r.Post("/", handler.GetMetricValueV2)
-			r.Get("/{mType}/{mName}", handler.GetMetricValue)
-		})
-		r.Route("/update", func(r chi.Router) {
-			r.Post("/", handler.UpdateMetrics)
-			r.Post("/{mType}/{mName}/{mValue}", handler.UpdateMetric)
-		})
-	})
-
-	return router
-}
 func main() {
 	parameters := config()
 
@@ -44,9 +23,57 @@ func main() {
 		return
 	}
 
-	store := storage.NewMemStorage()
-	router := initRouter(handler.NewHandler(store))
+	store := storage.NewMemStorage(parameters.storeInternal == 0, parameters.fileStoragePath)
+	if parameters.restoreData {
+		err := store.LoadStorageFromFile()
+		if err != nil {
+			fmt.Printf("error restore data: %s\n", err)
+		}
+	}
 
-	fmt.Println("Running server on ", parameters.serverAddr)
-	log.Fatal(http.ListenAndServe(parameters.serverAddr, router))
+	httpServer := server.NewServer(parameters.serverAddr, store)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
+		<-c
+		cancel()
+	}()
+
+	g, gCtx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		fmt.Println("Running server on ", parameters.serverAddr)
+		return httpServer.ListenAndServe()
+	})
+	g.Go(func() error {
+		<-gCtx.Done()
+		err := httpServer.Shutdown(context.Background())
+		if err != nil {
+			return err
+		}
+
+		return store.DumpStorageToFile()
+	})
+
+	if parameters.storeInternal > 0 {
+		g.Go(func() error {
+			for {
+				select {
+				case <-gCtx.Done():
+					return nil
+				case <-time.After(parameters.storeInternal):
+					err := store.DumpStorageToFile()
+					if err != nil {
+						fmt.Printf("error autosave: %s\n", err)
+					}
+				}
+			}
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		fmt.Printf("%s\n", err)
+	}
 }
