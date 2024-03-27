@@ -1,10 +1,12 @@
 package storage
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/e1m0re/grdn/internal/models"
 )
 
 func TestMemStorage_UpdateCounterMetric(t *testing.T) {
@@ -110,7 +112,7 @@ func TestNewMemStorage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storage := NewMemStorage()
+			storage := NewMemStorage(false, "")
 			assert.Equal(t, tt.want, storage)
 			assert.Equal(t, *tt.want, *storage)
 		})
@@ -123,7 +125,7 @@ func TestMemStorage_UpdateMetricValue(t *testing.T) {
 		Counters map[CounterName]CounterDateType
 	}
 	type args struct {
-		mType  MetricsType
+		mType  models.MetricsType
 		mName  string
 		mValue string
 	}
