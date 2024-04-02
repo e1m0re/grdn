@@ -1,38 +1,90 @@
 package main
 
 import (
-	"flag"
+	"context"
+	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	"github.com/go-chi/chi/v5"
+	"golang.org/x/sync/errgroup"
 
-	"github.com/e1m0re/grdn/internal/srvhandler"
+	"github.com/e1m0re/grdn/internal/http-server/server"
+	"github.com/e1m0re/grdn/internal/logger"
 	"github.com/e1m0re/grdn/internal/storage"
 )
 
 func main() {
-	var serverAddr string
+	parameters := config()
 
-	flag.StringVar(&serverAddr, "a", "localhost:8080", "address and port to run server")
+	mySlogger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: parameters.logLevel}))
+	slog.SetDefault(mySlogger)
 
-	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
-		serverAddr = envRunAddr
+	if err := logger.Initialize(parameters.loggerLevel); err != nil {
+		slog.Error(err.Error())
+		return
 	}
 
-	flag.Parse()
+	store := storage.NewMemStorage(parameters.storeInternal == 0, parameters.fileStoragePath)
+	if parameters.restoreData {
+		err := store.LoadStorageFromFile()
+		if err != nil {
+			slog.Error(fmt.Sprintf("error restore data: %s", err))
+		}
+	}
 
-	store := storage.NewMemStorage()
-	handler := srvhandler.NewHandler(store)
-	router := chi.NewRouter()
-	router.Route("/", func(r chi.Router) {
-		router.Get("/", handler.GetMainPage)
-		router.Get("/value/{mType}/{mName}", handler.GetMetricValue)
-		router.Post("/update/{mType}/{mName}/{mValue}", handler.UpdateMetric)
+	httpServer := server.NewServer(parameters.serverAddr, store)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
+		<-c
+		cancel()
+	}()
+
+	g, gCtx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		slog.Info(fmt.Sprintf("Running server on %s", parameters.serverAddr))
+		return httpServer.ListenAndServe()
+	})
+	g.Go(func() error {
+		<-gCtx.Done()
+		err := httpServer.Shutdown(context.Background())
+		if err != nil {
+			return err
+		}
+
+		return store.DumpStorageToFile()
 	})
 
-	fmt.Println("Running server on ", serverAddr)
-	log.Fatal(http.ListenAndServe(serverAddr, router))
+	if parameters.storeInternal > 0 {
+		g.Go(func() error {
+			for {
+				select {
+				case <-gCtx.Done():
+					return nil
+				case <-time.After(parameters.storeInternal):
+					err := store.DumpStorageToFile()
+					if err != nil {
+						slog.Error(fmt.Sprintf("error autosave: %s", err))
+					}
+				}
+			}
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		if errors.Is(err, http.ErrServerClosed) {
+			slog.Info(err.Error())
+			return
+		}
+
+		slog.Error(err.Error())
+	}
 }

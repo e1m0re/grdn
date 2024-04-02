@@ -1,11 +1,13 @@
 package monitor
 
 import (
-	"fmt"
+	"encoding/json"
+	"log/slog"
 	"math/rand"
 	"runtime"
 
 	"github.com/e1m0re/grdn/internal/apiclient"
+	"github.com/e1m0re/grdn/internal/models"
 	"github.com/e1m0re/grdn/internal/storage"
 )
 
@@ -66,27 +68,21 @@ func (m *MetricsMonitor) UpdateData() {
 	m.data.Gauges[storage.TotalAlloc] = storage.GaugeDateType(rtm.TotalAlloc)
 }
 
-type GlobalMetricsList struct {
-	MType  string
-	MName  string
-	MValue string
-}
-
-func (m *MetricsMonitor) GetData() []GlobalMetricsList {
-	result := make([]GlobalMetricsList, 0)
+func (m *MetricsMonitor) GetData() models.MetricsList {
+	result := make(models.MetricsList, 0)
 	for key, value := range m.data.Gauges {
-		result = append(result, GlobalMetricsList{
-			MType:  storage.GaugeType,
-			MName:  key,
-			MValue: fmt.Sprintf("%v", value),
+		result = append(result, &models.Metrics{
+			ID:    key,
+			MType: models.GaugeType,
+			Value: &value,
 		})
 	}
 
 	for key, value := range m.data.Counters {
-		result = append(result, GlobalMetricsList{
-			MType:  storage.CounterType,
-			MName:  key,
-			MValue: fmt.Sprintf("%v", value),
+		result = append(result, &models.Metrics{
+			ID:    key,
+			MType: models.CounterType,
+			Delta: &value,
 		})
 	}
 
@@ -95,9 +91,15 @@ func (m *MetricsMonitor) GetData() []GlobalMetricsList {
 
 func (m *MetricsMonitor) SendDataToServers(api *apiclient.API) {
 	for _, row := range m.GetData() {
-		_, err := api.DoRequest(fmt.Sprintf("/update/%s/%s/%s", row.MType, row.MName, row.MValue))
+
+		content, err := json.Marshal(row)
 		if err != nil {
-			fmt.Printf("%v\r\n", err)
+			slog.Error(err.Error())
+		}
+
+		err = api.DoRequest("/update", &content)
+		if err != nil {
+			slog.Error(err.Error())
 		}
 	}
 }

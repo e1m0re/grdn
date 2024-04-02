@@ -1,12 +1,19 @@
 package monitor
 
 import (
-	"github.com/e1m0re/grdn/internal/storage"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/e1m0re/grdn/internal/models"
+	"github.com/e1m0re/grdn/internal/storage"
 )
 
 func TestMetricsMonitor_GetData(t *testing.T) {
+	var d1 = 123.123
+
+	var d2 int64 = 10
+
 	type fields struct {
 		data MetricsState
 	}
@@ -14,24 +21,24 @@ func TestMetricsMonitor_GetData(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
-		want   []GlobalMetricsList
+		want   models.MetricsList
 	}{
 		{
 			name: "test get data with ALL types metrics",
 			fields: fields{data: MetricsState{
-				Gauges:   map[storage.GaugeName]storage.GaugeDateType{"Alloc": 123.123},
-				Counters: map[storage.CounterName]storage.CounterDateType{"PollCount": 10},
+				Gauges:   map[storage.GaugeName]storage.GaugeDateType{"Alloc": d1},
+				Counters: map[storage.CounterName]storage.CounterDateType{"PollCount": d2},
 			}},
-			want: []GlobalMetricsList{
-				{
-					MType:  storage.GaugeType,
-					MName:  "Alloc",
-					MValue: "123.123",
+			want: models.MetricsList{
+				&models.Metrics{
+					ID:    "Alloc",
+					MType: models.GaugeType,
+					Value: &d1,
 				},
-				{
-					MType:  storage.CounterType,
-					MName:  "PollCount",
-					MValue: "10",
+				&models.Metrics{
+					ID:    "PollCount",
+					MType: models.CounterType,
+					Delta: &d2,
 				},
 			},
 		},
@@ -39,27 +46,27 @@ func TestMetricsMonitor_GetData(t *testing.T) {
 			name: "test get data without gauge types metrics",
 			fields: fields{data: MetricsState{
 				Gauges:   make(map[storage.GaugeName]storage.GaugeDateType),
-				Counters: map[storage.CounterName]storage.CounterDateType{"PollCount": 10},
+				Counters: map[storage.CounterName]storage.CounterDateType{"PollCount": d2},
 			}},
-			want: []GlobalMetricsList{
-				{
-					MType:  storage.CounterType,
-					MName:  "PollCount",
-					MValue: "10",
+			want: models.MetricsList{
+				&models.Metrics{
+					ID:    "PollCount",
+					MType: models.CounterType,
+					Delta: &d2,
 				},
 			},
 		},
 		{
 			name: "test get data without counter types metrics",
 			fields: fields{data: MetricsState{
-				Gauges:   map[storage.GaugeName]storage.GaugeDateType{"Alloc": 123.123},
+				Gauges:   map[storage.GaugeName]storage.GaugeDateType{"Alloc": d1},
 				Counters: make(map[storage.CounterName]storage.CounterDateType),
 			}},
-			want: []GlobalMetricsList{
-				{
-					MType:  storage.GaugeType,
-					MName:  "Alloc",
-					MValue: "123.123",
+			want: models.MetricsList{
+				&models.Metrics{
+					ID:    "Alloc",
+					MType: models.GaugeType,
+					Value: &d1,
 				},
 			},
 		},
