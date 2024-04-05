@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -15,11 +16,13 @@ import (
 
 type Handler struct {
 	store *storage.MemStorage
+	db    *sql.DB
 }
 
-func NewHandler(store *storage.MemStorage) *Handler {
+func NewHandler(store *storage.MemStorage, db *sql.DB) *Handler {
 	return &Handler{
 		store: store,
+		db:    db,
 	}
 }
 
@@ -147,6 +150,14 @@ func (h *Handler) UpdateMetrics(response http.ResponseWriter, request *http.Requ
 	err = h.store.UpdateMetricValueV2(data)
 	if err != nil {
 		response.WriteHeader(http.StatusBadRequest)
+		return
+	}
+}
+
+func (h *Handler) CheckDBConnection(response http.ResponseWriter, _ *http.Request) {
+	if err := h.db.Ping(); err != nil {
+		slog.Error(err.Error())
+		response.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 }

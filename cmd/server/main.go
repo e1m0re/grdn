@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -11,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/e1m0re/grdn/internal/http-server/server"
@@ -29,6 +31,12 @@ func main() {
 		return
 	}
 
+	db, err := sql.Open("pgx", parameters.databaseDSN)
+	if err != nil {
+		slog.Error(fmt.Sprintf("error init database connection: %s", err))
+	}
+	defer db.Close()
+
 	store := storage.NewMemStorage(parameters.storeInternal == 0, parameters.fileStoragePath)
 	if parameters.restoreData {
 		err := store.LoadStorageFromFile()
@@ -37,7 +45,7 @@ func main() {
 		}
 	}
 
-	httpServer := server.NewServer(parameters.serverAddr, store)
+	httpServer := server.NewServer(parameters.serverAddr, store, db)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {

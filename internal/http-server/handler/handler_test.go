@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -122,7 +123,8 @@ func TestHandler_updateMetricHandler(t *testing.T) {
 	}
 
 	store := storage.NewMemStorage(false, "")
-	handler := http.HandlerFunc(NewHandler(store).UpdateMetric)
+	db, _ := sql.Open("pgx", "")
+	handler := http.HandlerFunc(NewHandler(store, db).UpdateMetric)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -268,10 +270,11 @@ func TestHandler_UpdateMetrics(t *testing.T) {
 		},
 	}
 
+	db, _ := sql.Open("pgx", "")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			handler := http.HandlerFunc(NewHandler(tt.fields.store).UpdateMetrics)
+			handler := http.HandlerFunc(NewHandler(tt.fields.store, db).UpdateMetrics)
 
 			response := httptest.NewRecorder()
 
@@ -396,6 +399,7 @@ func TestHandler_GetMetricValue(t *testing.T) {
 		},
 	}
 
+	db, _ := sql.Open("pgx", "")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
@@ -407,7 +411,7 @@ func TestHandler_GetMetricValue(t *testing.T) {
 			}
 			request := tt.args.request.WithContext(context.WithValue(tt.args.request.Context(), chi.RouteCtxKey, rctx))
 
-			handler := http.HandlerFunc(NewHandler(tt.fields.store).GetMetricValue)
+			handler := http.HandlerFunc(NewHandler(tt.fields.store, db).GetMetricValue)
 			handler.ServeHTTP(response, request)
 			require.Equal(t, tt.want.statusCode, response.Code)
 			if tt.want.statusCode == http.StatusOK {
@@ -497,11 +501,12 @@ func TestHandler_GetMetricValueV2(t *testing.T) {
 			},
 		},
 	}
+	db, _ := sql.Open("pgx", "")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
 			response := httptest.NewRecorder()
-			NewHandler(tt.fields.store).GetMetricValueV2(response, tt.args.request)
+			NewHandler(tt.fields.store, db).GetMetricValueV2(response, tt.args.request)
 			require.Equal(t, tt.want.statusCode, response.Code)
 			assert.Equal(t, tt.want.content, response.Body.String())
 		})

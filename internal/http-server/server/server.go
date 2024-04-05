@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -21,6 +22,7 @@ func initRouter(handler *handler.Handler) *chi.Mux {
 
 	router.Route("/", func(r chi.Router) {
 		r.Get("/", handler.GetMainPage)
+		r.Get("/ping", handler.CheckDBConnection)
 		r.Route("/value", func(r chi.Router) {
 			r.Post("/", handler.GetMetricValueV2)
 			r.Get("/{mType}/{mName}", handler.GetMetricValue)
@@ -34,10 +36,10 @@ func initRouter(handler *handler.Handler) *chi.Mux {
 	return router
 }
 
-func NewServer(addr string, store *storage.MemStorage) *http.Server {
+func NewServer(addr string, store *storage.MemStorage, db *sql.DB) *http.Server {
 	server := &http.Server{
 		Addr:    addr,
-		Handler: initRouter(handler.NewHandler(store)),
+		Handler: initRouter(handler.NewHandler(store, db)),
 	}
 
 	return server

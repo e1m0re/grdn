@@ -15,6 +15,7 @@ type parameters struct {
 	serverAddr      string
 	storeInternal   time.Duration
 	verboseMode     bool
+	databaseDSN     string
 }
 
 func config() *parameters {
@@ -28,6 +29,7 @@ func config() *parameters {
 	flag.DurationVar(&options.storeInternal, "i", 300*time.Second, "time interval to save data to HDD")
 	flag.StringVar(&options.fileStoragePath, "f", "/tmp/metrics-db.json", "file path for DB file")
 	flag.BoolVar(&options.restoreData, "r", true, "save or don't save data to HDD on shutdown")
+	flag.StringVar(&options.databaseDSN, "d", "", "database connection string")
 	flag.Parse()
 
 	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
@@ -55,6 +57,11 @@ func config() *parameters {
 	envRestoreData := os.Getenv("RESTORE")
 	if envRestoreData != "" {
 		options.restoreData = envRestoreData == "true"
+	}
+
+	envDatabaseDSN := os.Getenv("DATABASE_DSN")
+	if envDatabaseDSN != "" {
+		options.databaseDSN = envDatabaseDSN
 	}
 
 	return &options
