@@ -1,8 +1,7 @@
-package handler
+package server
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -11,22 +10,9 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/e1m0re/grdn/internal/models"
-	"github.com/e1m0re/grdn/internal/storage"
 )
 
-type Handler struct {
-	store *storage.MemStorage
-	db    *sql.DB
-}
-
-func NewHandler(store *storage.MemStorage, db *sql.DB) *Handler {
-	return &Handler{
-		store: store,
-		db:    db,
-	}
-}
-
-func (h *Handler) UpdateMetric(response http.ResponseWriter, request *http.Request) {
+func (srv *Server) updateMetric(response http.ResponseWriter, request *http.Request) {
 	if request.Method != http.MethodPost {
 		http.Error(response, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -36,17 +22,17 @@ func (h *Handler) UpdateMetric(response http.ResponseWriter, request *http.Reque
 	mName := chi.URLParam(request, "mName")
 	mValue := chi.URLParam(request, "mValue")
 
-	err := h.store.UpdateMetricValue(mType, mName, mValue)
+	err := srv.store.UpdateMetricValue(mType, mName, mValue)
 	if err != nil {
 		response.WriteHeader(http.StatusBadRequest)
 		return
 	}
 }
 
-func (h *Handler) GetMainPage(response http.ResponseWriter, _ *http.Request) {
+func (srv *Server) getMainPage(response http.ResponseWriter, _ *http.Request) {
 	response.Header().Set("Content-Type", "text/html")
 
-	for _, value := range h.store.GetAllMetrics() {
+	for _, value := range srv.store.GetAllMetrics() {
 		_, err := fmt.Fprintf(response, "%s\r\n", value)
 		if err != nil {
 			slog.Error(err.Error())
@@ -56,13 +42,13 @@ func (h *Handler) GetMainPage(response http.ResponseWriter, _ *http.Request) {
 	response.WriteHeader(http.StatusOK)
 }
 
-func (h *Handler) GetMetricValue(response http.ResponseWriter, request *http.Request) {
+func (srv *Server) getMetricValue(response http.ResponseWriter, request *http.Request) {
 	if request.Method != http.MethodGet {
 		http.Error(response, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	metric, err := h.store.GetMetric(chi.URLParam(request, "mType"), chi.URLParam(request, "mName"))
+	metric, err := srv.store.GetMetric(chi.URLParam(request, "mType"), chi.URLParam(request, "mName"))
 	if err != nil {
 		http.Error(response, "Not found.", http.StatusNotFound)
 		return
@@ -79,7 +65,7 @@ func (h *Handler) GetMetricValue(response http.ResponseWriter, request *http.Req
 	response.WriteHeader(http.StatusOK)
 }
 
-func (h *Handler) GetMetricValueV2(response http.ResponseWriter, request *http.Request) {
+func (srv *Server) getMetricValueV2(response http.ResponseWriter, request *http.Request) {
 	if request.Method != http.MethodPost {
 		http.Error(response, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -100,7 +86,7 @@ func (h *Handler) GetMetricValueV2(response http.ResponseWriter, request *http.R
 		return
 	}
 
-	metric, err := h.store.GetMetric(reqData.MType, reqData.ID)
+	metric, err := srv.store.GetMetric(reqData.MType, reqData.ID)
 
 	if err != nil {
 		http.Error(response, "Not found.", http.StatusNotFound)
@@ -125,7 +111,7 @@ func (h *Handler) GetMetricValueV2(response http.ResponseWriter, request *http.R
 	response.WriteHeader(http.StatusOK)
 }
 
-func (h *Handler) UpdateMetrics(response http.ResponseWriter, request *http.Request) {
+func (srv *Server) updateMetrics(response http.ResponseWriter, request *http.Request) {
 	if request.Method != http.MethodPost {
 		http.Error(response, "Method not allowed.", http.StatusMethodNotAllowed)
 		return
@@ -147,15 +133,15 @@ func (h *Handler) UpdateMetrics(response http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	err = h.store.UpdateMetricValueV2(data)
+	err = srv.store.UpdateMetricValueV2(data)
 	if err != nil {
 		response.WriteHeader(http.StatusBadRequest)
 		return
 	}
 }
 
-func (h *Handler) CheckDBConnection(response http.ResponseWriter, _ *http.Request) {
-	if err := h.db.Ping(); err != nil {
+func (srv *Server) checkDBConnection(response http.ResponseWriter, request *http.Request) {
+	if err := srv.store.Ping(request.Context()); err != nil {
 		slog.Error(err.Error())
 		response.WriteHeader(http.StatusInternalServerError)
 		return
