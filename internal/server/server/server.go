@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -30,35 +29,49 @@ type Server struct {
 }
 
 func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
-
-	db, err := sql.Open("pgx", cfg.DatabaseDSN)
-	if err != nil {
-		slog.Error(fmt.Sprintf("error init database connection: %s", err))
-	}
-	defer db.Close()
-
-	err = db.Ping()
-	if err != nil {
-		slog.Error(fmt.Sprintf("error init database connection: %s", err))
-	}
-
-	store := storage.NewMemStorage(cfg.StoreInternal == 0, cfg.FileStoragePath)
-	if cfg.RestoreData {
-		err := store.LoadStorageFromFile()
-		if err != nil {
-			slog.Error(fmt.Sprintf("error restore data: %s", err))
-		}
-	}
-
 	srv := &Server{
 		cfg:    cfg,
 		router: chi.NewRouter(),
-		store:  store,
+	}
+
+	err := srv.initStore(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	srv.initRoutes()
 
 	return srv, nil
+}
+
+func (srv *Server) initStore(ctx context.Context) error {
+	if srv.cfg.DatabaseDSN != "" {
+		err := srv.migrate(ctx)
+		if err != nil {
+			return err
+		}
+
+		store, err := storage.NewDBStorage(ctx, srv.cfg.DatabaseDSN)
+		if err != nil {
+			return err
+		}
+
+		srv.store = store
+		return nil
+	}
+
+	//if srv.cfg.FileStoragePath != "" {
+	store := storage.NewMemStorage(srv.cfg.StoreInternal == 0, srv.cfg.FileStoragePath)
+	if srv.cfg.RestoreData {
+		err := store.LoadStorageFromFile()
+		if err != nil {
+			return err
+		}
+	}
+	srv.store = store
+	//}
+
+	return nil
 }
 
 func (srv *Server) initRoutes() {
@@ -121,11 +134,19 @@ func (srv *Server) shutdown(ctx context.Context) error {
 	err := srv.httpServer.Shutdown(ctx)
 	if err != nil {
 		slog.Error("failed to shutdown http server")
+		return err
 	}
 
 	err = srv.store.DumpStorageToFile()
 	if err != nil {
 		slog.Error(err.Error())
+		return err
+	}
+
+	err = srv.store.Close()
+	if err != nil {
+		slog.Error(err.Error())
+		return err
 	}
 
 	slog.Info("Server shutdown complete")
@@ -134,12 +155,6 @@ func (srv *Server) shutdown(ctx context.Context) error {
 }
 
 func (srv *Server) Start(ctx context.Context) error {
-	if srv.cfg.DatabaseDSN != "" {
-		err := srv.migrate(ctx)
-		if err != nil {
-			return err
-		}
-	}
 
 	grp, ctx := errgroup.WithContext(ctx)
 

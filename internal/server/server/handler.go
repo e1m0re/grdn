@@ -29,10 +29,17 @@ func (srv *Server) updateMetric(response http.ResponseWriter, request *http.Requ
 	}
 }
 
-func (srv *Server) getMainPage(response http.ResponseWriter, _ *http.Request) {
+func (srv *Server) getMainPage(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "text/html")
 
-	for _, value := range srv.store.GetAllMetrics() {
+	metrics, err := srv.store.GetAllMetrics(request.Context())
+	if err != nil {
+		slog.Error(err.Error())
+		response.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	for _, value := range metrics {
 		_, err := fmt.Fprintf(response, "%s\r\n", value)
 		if err != nil {
 			slog.Error(err.Error())

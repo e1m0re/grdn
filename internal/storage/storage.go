@@ -7,15 +7,16 @@ import (
 )
 
 type Interface interface {
-	GetAllMetrics() []string
-	Ping(ctx context.Context) error
+	Close() error
 	DumpStorageToFile() error
+	GetAllMetrics(ctx context.Context) ([]string, error)
+	GetMetric(mType models.MetricsType, mName string) (metric *models.Metrics, err error)
 	LoadStorageFromFile() error
-	UpdateGaugeMetric(name GaugeName, value GaugeDateType)
+	Ping(ctx context.Context) error
 	UpdateCounterMetric(name CounterName, value CounterDateType)
+	UpdateGaugeMetric(name GaugeName, value GaugeDateType)
 	UpdateMetricValue(mType models.MetricsType, mName string, mValue string) error
 	UpdateMetricValueV2(data models.Metrics) error
-	GetMetric(mType models.MetricsType, mName string) (metric *models.Metrics, err error)
 }
 
 type GaugeDateType = float64

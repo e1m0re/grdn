@@ -28,6 +28,10 @@ func NewMemStorage(syncMode bool, filePath string) *MemStorage {
 	}
 }
 
+func (s *MemStorage) Close() error {
+	return nil
+}
+
 func (s *MemStorage) UpdateGaugeMetric(name GaugeName, value GaugeDateType) {
 	s.Gauges[name] = value
 }
@@ -95,7 +99,7 @@ func (s *MemStorage) UpdateMetricValueV2(data models.Metrics) error {
 	return nil
 }
 
-func (s *MemStorage) GetAllMetrics() []string {
+func (s *MemStorage) GetAllMetrics(ctx context.Context) ([]string, error) {
 	var result []string
 	for key, value := range s.Gauges {
 		result = append(result, fmt.Sprintf("%s: %s", key, strconv.FormatFloat(value, 'f', -1, 64)))
@@ -105,7 +109,7 @@ func (s *MemStorage) GetAllMetrics() []string {
 		result = append(result, fmt.Sprintf("%s: %v", key, value))
 	}
 
-	return result
+	return result, nil
 }
 
 func (s *MemStorage) GetMetric(mType models.MetricsType, mName string) (metric *models.Metrics, err error) {
