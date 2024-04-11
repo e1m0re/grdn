@@ -18,12 +18,20 @@ func (srv *Server) updateMetric(response http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	mType := chi.URLParam(request, "mType")
-	mName := chi.URLParam(request, "mName")
-	mValue := chi.URLParam(request, "mValue")
-
-	err := srv.store.UpdateMetricValue(mType, mName, mValue)
+	metric := models.Metric{
+		ID:    chi.URLParam(request, "mName"),
+		MType: chi.URLParam(request, "mType"),
+	}
+	err := metric.ValueFromString(chi.URLParam(request, "mValue"))
 	if err != nil {
+		slog.Error(err.Error())
+		response.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err = srv.store.UpdateMetricValue(request.Context(), metric)
+	if err != nil {
+		slog.Error(err.Error())
 		response.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -55,8 +63,14 @@ func (srv *Server) getMetricValue(response http.ResponseWriter, request *http.Re
 		return
 	}
 
-	metric, err := srv.store.GetMetric(chi.URLParam(request, "mType"), chi.URLParam(request, "mName"))
+	metric, err := srv.store.GetMetric(request.Context(), chi.URLParam(request, "mType"), chi.URLParam(request, "mName"))
 	if err != nil {
+		slog.Error(err.Error())
+		http.Error(response, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if metric == nil {
 		http.Error(response, "Not found.", http.StatusNotFound)
 		return
 	}
@@ -86,16 +100,22 @@ func (srv *Server) getMetricValueV2(response http.ResponseWriter, request *http.
 		http.Error(response, err.Error(), http.StatusBadRequest)
 	}
 
-	var reqData models.Metrics
+	var reqData models.Metric
 
 	if err = json.Unmarshal(buf.Bytes(), &reqData); err != nil {
 		http.Error(response, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	metric, err := srv.store.GetMetric(reqData.MType, reqData.ID)
+	metric, err := srv.store.GetMetric(request.Context(), reqData.MType, reqData.ID)
 
 	if err != nil {
+		slog.Error(err.Error())
+		http.Error(response, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if metric == nil {
 		http.Error(response, "Not found.", http.StatusNotFound)
 		return
 	}
@@ -124,7 +144,7 @@ func (srv *Server) updateMetrics(response http.ResponseWriter, request *http.Req
 		return
 	}
 
-	var data models.Metrics
+	var data models.Metric
 
 	var buf bytes.Buffer
 
@@ -140,7 +160,7 @@ func (srv *Server) updateMetrics(response http.ResponseWriter, request *http.Req
 		return
 	}
 
-	err = srv.store.UpdateMetricValueV2(data)
+	err = srv.store.UpdateMetricValue(request.Context(), data)
 	if err != nil {
 		response.WriteHeader(http.StatusBadRequest)
 		return

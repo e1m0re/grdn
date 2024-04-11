@@ -12,14 +12,14 @@ const (
 	CounterType = MetricsType("counter")
 )
 
-type Metrics struct {
-	ID    string   `json:"id"`
-	MType string   `json:"type"`
-	Delta *int64   `json:"delta,omitempty"`
-	Value *float64 `json:"value,omitempty"`
+type Metric struct {
+	ID    string      `json:"id" db:"name"`
+	MType MetricsType `json:"type" db:"type"`
+	Delta *int64      `json:"delta,omitempty" db:"delta"`
+	Value *float64    `json:"value,omitempty" db:"value"`
 }
 
-func (m *Metrics) ValueToString() string {
+func (m *Metric) ValueToString() string {
 	switch m.MType {
 	case GaugeType:
 		return strconv.FormatFloat(*m.Value, 'f', -1, 64)
@@ -30,4 +30,28 @@ func (m *Metrics) ValueToString() string {
 	}
 }
 
-type MetricsList []*Metrics
+func (m *Metric) String() string {
+	return fmt.Sprintf("%s: %s", m.ID, m.ValueToString())
+}
+
+func (m *Metric) ValueFromString(str string) error {
+	switch m.MType {
+	case GaugeType:
+		value, err := strconv.ParseFloat(str, 64)
+		if err != nil {
+			return err
+		}
+
+		m.Value = &value
+	case CounterType:
+		value, err := strconv.ParseInt(str, 10, 64)
+		if err != nil {
+			return err
+		}
+		m.Delta = &value
+	}
+
+	return nil
+}
+
+type MetricsList []*Metric

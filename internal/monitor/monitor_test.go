@@ -30,12 +30,12 @@ func TestMetricsMonitor_GetData(t *testing.T) {
 				Counters: map[storage.CounterName]storage.CounterDateType{"PollCount": d2},
 			}},
 			want: models.MetricsList{
-				&models.Metrics{
+				&models.Metric{
 					ID:    "Alloc",
 					MType: models.GaugeType,
 					Value: &d1,
 				},
-				&models.Metrics{
+				&models.Metric{
 					ID:    "PollCount",
 					MType: models.CounterType,
 					Delta: &d2,
@@ -49,7 +49,7 @@ func TestMetricsMonitor_GetData(t *testing.T) {
 				Counters: map[storage.CounterName]storage.CounterDateType{"PollCount": d2},
 			}},
 			want: models.MetricsList{
-				&models.Metrics{
+				&models.Metric{
 					ID:    "PollCount",
 					MType: models.CounterType,
 					Delta: &d2,
@@ -63,7 +63,7 @@ func TestMetricsMonitor_GetData(t *testing.T) {
 				Counters: make(map[storage.CounterName]storage.CounterDateType),
 			}},
 			want: models.MetricsList{
-				&models.Metrics{
+				&models.Metric{
 					ID:    "Alloc",
 					MType: models.GaugeType,
 					Value: &d1,

@@ -71,7 +71,7 @@ func (m *MetricsMonitor) UpdateData() {
 func (m *MetricsMonitor) GetData() models.MetricsList {
 	result := make(models.MetricsList, 0)
 	for key, value := range m.data.Gauges {
-		result = append(result, &models.Metrics{
+		result = append(result, &models.Metric{
 			ID:    key,
 			MType: models.GaugeType,
 			Value: &value,
@@ -79,7 +79,7 @@ func (m *MetricsMonitor) GetData() models.MetricsList {
 	}
 
 	for key, value := range m.data.Counters {
-		result = append(result, &models.Metrics{
+		result = append(result, &models.Metric{
 			ID:    key,
 			MType: models.CounterType,
 			Delta: &value,
