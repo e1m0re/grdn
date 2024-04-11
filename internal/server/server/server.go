@@ -11,8 +11,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/pressly/goose/v3"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/e1m0re/grdn/internal/db/migrations"
 	"github.com/e1m0re/grdn/internal/server/config"
 	gzipMiddleware "github.com/e1m0re/grdn/internal/server/middleware/gzip"
 	loggerMiddleware "github.com/e1m0re/grdn/internal/server/middleware/logger"
@@ -77,6 +80,28 @@ func (srv *Server) initRoutes() {
 	})
 }
 
+func (srv *Server) migrate(ctx context.Context) error {
+	stdlib.GetDefaultDriver()
+
+	db, err := goose.OpenDBWithDriver("pgx", srv.cfg.DatabaseDSN)
+	if err != nil {
+		return err
+	}
+
+	goose.SetBaseFS(&migrations.Content)
+	err = goose.SetDialect("postgres")
+	if err != nil {
+		return err
+	}
+
+	err = goose.Up(db, ".")
+	if err != nil {
+		return err
+	}
+
+	return db.Close()
+}
+
 func (srv *Server) startHTTPServer(ctx context.Context) error {
 	srv.httpServer = &http.Server{
 		Addr:    srv.cfg.ServerAddr,
@@ -109,6 +134,13 @@ func (srv *Server) shutdown(ctx context.Context) error {
 }
 
 func (srv *Server) Start(ctx context.Context) error {
+	if srv.cfg.DatabaseDSN != "" {
+		err := srv.migrate(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
 	grp, ctx := errgroup.WithContext(ctx)
 
 	grp.Go(func() error {
