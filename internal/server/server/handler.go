@@ -3,7 +3,9 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/e1m0re/grdn/internal/storage"
 	"log/slog"
 	"net/http"
 
@@ -40,13 +42,13 @@ func (srv *Server) getMetricValue(response http.ResponseWriter, request *http.Re
 
 	metric, err := srv.store.GetMetric(request.Context(), chi.URLParam(request, "mType"), chi.URLParam(request, "mName"))
 	if err != nil {
+		if errors.Is(err, storage.ErrUnknownMetric) {
+			http.Error(response, "Not found.", http.StatusNotFound)
+			return
+		}
+
 		slog.Error(err.Error())
 		http.Error(response, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if metric == nil {
-		http.Error(response, "Not found.", http.StatusNotFound)
 		return
 	}
 
@@ -76,22 +78,20 @@ func (srv *Server) getMetricValueV2(response http.ResponseWriter, request *http.
 	}
 
 	var reqData models.Metric
-
 	if err = json.Unmarshal(buf.Bytes(), &reqData); err != nil {
 		http.Error(response, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	metric, err := srv.store.GetMetric(request.Context(), reqData.MType, reqData.ID)
-
 	if err != nil {
+		if errors.Is(err, storage.ErrUnknownMetric) {
+			http.Error(response, "Not found.", http.StatusNotFound)
+			return
+		}
+
 		slog.Error(err.Error())
 		http.Error(response, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if metric == nil {
-		http.Error(response, "Not found.", http.StatusNotFound)
 		return
 	}
 
@@ -130,7 +130,9 @@ func (srv *Server) updateMetricV1(response http.ResponseWriter, request *http.Re
 		return
 	}
 
-	err = srv.store.UpdateMetric(request.Context(), metric)
+	err = retryFunc(request.Context(), func() error {
+		return srv.store.UpdateMetric(request.Context(), metric)
+	})
 	if err != nil {
 		slog.Error(err.Error())
 		response.WriteHeader(http.StatusBadRequest)
@@ -157,7 +159,9 @@ func (srv *Server) updateMetricV2(response http.ResponseWriter, request *http.Re
 		return
 	}
 
-	err = srv.store.UpdateMetric(request.Context(), data)
+	err = retryFunc(request.Context(), func() error {
+		return srv.store.UpdateMetric(request.Context(), data)
+	})
 	if err != nil {
 		response.WriteHeader(http.StatusBadRequest)
 		return
@@ -183,8 +187,11 @@ func (srv *Server) updateMetrics(response http.ResponseWriter, request *http.Req
 		return
 	}
 
-	err = srv.store.UpdateMetrics(request.Context(), metrics)
+	err = retryFunc(request.Context(), func() error {
+		return srv.store.UpdateMetrics(request.Context(), metrics)
+	})
 	if err != nil {
+		slog.Error("update metrics error", slog.String("error", err.Error()))
 		response.WriteHeader(http.StatusBadRequest)
 		return
 	}

@@ -5,7 +5,7 @@ test:
 	go test -race -covermode=atomic -coverprofile=coverage.out ./...
 
 run-agent:
-	go run cmd/agent/main.go cmd/agent/flags.go
+	go run cmd/agent/main.go
 
 build-agent:
 	go build -o bin/agent cmd/agent/*.go

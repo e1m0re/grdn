@@ -1,12 +1,9 @@
 package monitor
 
 import (
-	"encoding/json"
-	"log/slog"
 	"math/rand"
 	"runtime"
 
-	"github.com/e1m0re/grdn/internal/apiclient"
 	"github.com/e1m0re/grdn/internal/models"
 	"github.com/e1m0re/grdn/internal/storage"
 )
@@ -17,17 +14,15 @@ type MetricsState struct {
 }
 
 type MetricsMonitor struct {
-	data      MetricsState
-	apiClient *apiclient.API
+	data MetricsState
 }
 
-func NewMetricsMonitor(apiClient *apiclient.API) *MetricsMonitor {
+func NewMetricsMonitor() *MetricsMonitor {
 	return &MetricsMonitor{
 		data: MetricsState{
 			Gauges:   make(map[storage.GaugeName]storage.GaugeDateType),
 			Counters: make(map[storage.CounterName]storage.CounterDateType),
 		},
-		apiClient: apiClient,
 	}
 }
 
@@ -70,7 +65,7 @@ func (m *MetricsMonitor) UpdateData() {
 	m.data.Gauges[storage.TotalAlloc] = storage.GaugeDateType(rtm.TotalAlloc)
 }
 
-func (m *MetricsMonitor) GetData() models.MetricsList {
+func (m *MetricsMonitor) GetMetricsList() models.MetricsList {
 	result := make(models.MetricsList, 0)
 	for key, value := range m.data.Gauges {
 		x := value
@@ -91,18 +86,4 @@ func (m *MetricsMonitor) GetData() models.MetricsList {
 	}
 
 	return result
-}
-
-func (m *MetricsMonitor) SendDataToServer() {
-	metrics := m.GetData()
-
-	content, err := json.Marshal(metrics)
-	if err != nil {
-		slog.Error(err.Error())
-	}
-
-	err = m.apiClient.DoRequest("/updates/", &content)
-	if err != nil {
-		slog.Error(err.Error())
-	}
 }

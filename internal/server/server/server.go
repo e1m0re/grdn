@@ -16,8 +16,7 @@ import (
 
 	"github.com/e1m0re/grdn/internal/db/migrations"
 	"github.com/e1m0re/grdn/internal/server/config"
-	gzipMiddleware "github.com/e1m0re/grdn/internal/server/middleware/gzip"
-	loggerMiddleware "github.com/e1m0re/grdn/internal/server/middleware/logger"
+	grdnMiddleware "github.com/e1m0re/grdn/internal/server/middleware"
 	"github.com/e1m0re/grdn/internal/storage"
 )
 
@@ -34,14 +33,11 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 		router: chi.NewRouter(),
 	}
 
-	err := srv.initStore(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	srv.initRoutes()
 
-	return srv, nil
+	err := srv.initStore(ctx)
+
+	return srv, err
 }
 
 func (srv *Server) initStore(ctx context.Context) error {
@@ -51,7 +47,7 @@ func (srv *Server) initStore(ctx context.Context) error {
 			return err
 		}
 
-		store, err := storage.NewDBStorage(ctx, srv.cfg.DatabaseDSN)
+		store, err := storage.NewDBStorage(srv.cfg.DatabaseDSN)
 		if err != nil {
 			return err
 		}
@@ -60,23 +56,21 @@ func (srv *Server) initStore(ctx context.Context) error {
 		return nil
 	}
 
-	//if srv.cfg.FileStoragePath != "" {
 	store := storage.NewMemStorage(srv.cfg.StoreInternal == 0, srv.cfg.FileStoragePath)
 	if srv.cfg.RestoreData {
 		err := store.LoadStorageFromFile()
 		if err != nil {
-			return err
+			slog.Warn("restore data at start server", slog.String("error", err.Error()))
 		}
 	}
 	srv.store = store
-	//}
 
 	return nil
 }
 
 func (srv *Server) initRoutes() {
-	srv.router.Use(loggerMiddleware.Middleware)
-	srv.router.Use(gzipMiddleware.Middleware)
+	srv.router.Use(grdnMiddleware.LoggingMiddleware)
+	srv.router.Use(grdnMiddleware.GZipMiddleware)
 	srv.router.Use(middleware.Compress(5, "text/html", "application/json"))
 
 	srv.router.Route("/", func(r chi.Router) {
@@ -178,7 +172,9 @@ func (srv *Server) Start(ctx context.Context) error {
 				case <-ctx.Done():
 					return nil
 				case <-time.After(srv.cfg.StoreInternal):
-					err := srv.store.DumpStorageToFile()
+					err := retryFunc(ctx, func() error {
+						return srv.store.DumpStorageToFile()
+					})
 					if err != nil {
 						slog.Error(fmt.Sprintf("error autosave: %s", err))
 					}

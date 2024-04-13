@@ -6,10 +6,10 @@ CREATE TABLE metrics
     Id    SERIAL PRIMARY KEY,
     Name  VARCHAR(50) NOT NULL,
     Type  VARCHAR(50) NOT NULL,
-    Delta INT,
+    Delta BIGINT,
     Value DOUBLE PRECISION,
     UNIQUE (Name, Type)
-)
+);
 -- +goose StatementEnd
 
 -- +goose Down

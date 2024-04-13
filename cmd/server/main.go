@@ -3,15 +3,16 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
-	"github.com/e1m0re/grdn/internal/logger"
 	"github.com/e1m0re/grdn/internal/server/config"
 	"github.com/e1m0re/grdn/internal/server/server"
 )
@@ -32,10 +33,6 @@ func main() {
 
 	mySlogger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel}))
 	slog.SetDefault(mySlogger)
-	if err := logger.Initialize(cfg.LoggerLevel); err != nil {
-		slog.Error(err.Error())
-		return
-	}
 
 	srv, err := server.NewServer(ctx, cfg)
 	if err != nil {
@@ -43,9 +40,15 @@ func main() {
 	}
 
 	err = srv.Start(ctx)
-	if errors.Is(err, http.ErrServerClosed) {
-		slog.Info(err.Error())
-		return
+	if err != nil {
+		if errors.Is(err, http.ErrServerClosed) {
+			slog.Info(err.Error())
+			return
+		}
+
+		slog.Error("error",
+			slog.String("error", fmt.Sprintf("%v", err)),
+			slog.String("stack", string(debug.Stack())),
+		)
 	}
-	slog.Error(err.Error())
 }

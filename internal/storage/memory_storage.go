@@ -5,23 +5,31 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/e1m0re/grdn/internal/models"
 	"log/slog"
 	"os"
 	"strconv"
+	"sync"
+
+	"github.com/e1m0re/grdn/internal/models"
 )
 
+type metrics struct {
+	Gauges   map[GaugeName]GaugeDateType     `json:"gauges"`
+	Counters map[CounterName]CounterDateType `json:"counters"`
+}
+
 type MemStorage struct {
-	Gauges   map[GaugeName]GaugeDateType
-	Counters map[CounterName]CounterDateType
+	mx       sync.RWMutex
+	gauges   map[GaugeName]GaugeDateType
+	counters map[CounterName]CounterDateType
 	syncMode bool
 	filePath string
 }
 
 func NewMemStorage(syncMode bool, filePath string) *MemStorage {
 	return &MemStorage{
-		Gauges:   make(map[GaugeName]GaugeDateType),
-		Counters: make(map[CounterName]CounterDateType),
+		gauges:   make(map[GaugeName]GaugeDateType),
+		counters: make(map[CounterName]CounterDateType),
 		syncMode: syncMode,
 		filePath: filePath,
 	}
@@ -38,35 +46,46 @@ func (s *MemStorage) DumpStorageToFile() error {
 
 	defer file.Close()
 
-	data, err := json.Marshal(s)
+	metrics := &metrics{
+		Gauges:   s.gauges,
+		Counters: s.counters,
+	}
+
+	data, err := json.Marshal(metrics)
 	if err != nil {
 		return err
 	}
 
+	slog.Info(string(data))
 	_, err = file.Write(data)
 
 	return err
 }
 func (s *MemStorage) GetAllMetrics(ctx context.Context) ([]string, error) {
+	s.mx.RLock()
+	defer s.mx.RUnlock()
+
 	var result []string
-	for key, value := range s.Gauges {
+	for key, value := range s.gauges {
 		result = append(result, fmt.Sprintf("%s: %s", key, strconv.FormatFloat(value, 'f', -1, 64)))
 	}
 
-	for key, value := range s.Counters {
+	for key, value := range s.counters {
 		result = append(result, fmt.Sprintf("%s: %v", key, value))
 	}
 
 	return result, nil
 }
 func (s *MemStorage) GetMetric(ctx context.Context, mType models.MetricsType, mName string) (metric *models.Metric, err error) {
+	s.mx.RLock()
+	defer s.mx.RUnlock()
+
 	switch mType {
 	case models.GaugeType:
-		value, ok := s.Gauges[mName]
+		value, ok := s.gauges[mName]
 
 		if !ok {
-			err = errors.New("unknown metric")
-			return nil, err
+			return nil, ErrUnknownMetric
 		}
 
 		metric = &models.Metric{
@@ -76,11 +95,10 @@ func (s *MemStorage) GetMetric(ctx context.Context, mType models.MetricsType, mN
 			Value: &value,
 		}
 	case models.CounterType:
-		delta, ok := s.Counters[mName]
+		delta, ok := s.counters[mName]
 
 		if !ok {
-			err = errors.New("unknown metric")
-			return nil, err
+			return nil, ErrUnknownMetric
 		}
 
 		metric = &models.Metric{
@@ -90,7 +108,8 @@ func (s *MemStorage) GetMetric(ctx context.Context, mType models.MetricsType, mN
 			Value: nil,
 		}
 	default:
-		err = errors.New("unknown metric")
+
+		return nil, ErrUnknownMetric
 	}
 
 	return
@@ -101,12 +120,15 @@ func (s *MemStorage) LoadStorageFromFile() error {
 		return err
 	}
 
-	tmpData := &MemStorage{}
-	err = json.Unmarshal(file, &tmpData)
+	metrics := metrics{
+		Gauges:   make(map[GaugeName]GaugeDateType),
+		Counters: make(map[CounterName]CounterDateType),
+	}
+	err = json.Unmarshal(file, &metrics)
 
 	if err == nil {
-		s.Gauges = tmpData.Gauges
-		s.Counters = tmpData.Counters
+		s.gauges = metrics.Gauges
+		s.counters = metrics.Counters
 	}
 
 	return err
@@ -117,9 +139,9 @@ func (s *MemStorage) Ping(ctx context.Context) error {
 func (s *MemStorage) UpdateMetric(ctx context.Context, metric models.Metric) error {
 	switch metric.MType {
 	case models.GaugeType:
-		s.Gauges[metric.ID] = *metric.Value
+		s.gauges[metric.ID] = *metric.Value
 	case models.CounterType:
-		s.Counters[metric.ID] = *metric.Delta
+		s.counters[metric.ID] += *metric.Delta
 	default:
 		return errors.New("unknown metric type")
 	}

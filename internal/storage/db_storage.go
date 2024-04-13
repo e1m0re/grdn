@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+
 	"github.com/jmoiron/sqlx"
 
 	"github.com/e1m0re/grdn/internal/models"
@@ -13,7 +14,7 @@ type DBStorage struct {
 	db *sqlx.DB
 }
 
-func NewDBStorage(ctx context.Context, dsn string) (*DBStorage, error) {
+func NewDBStorage(dsn string) (*DBStorage, error) {
 	db, err := sqlx.Open("pgx", dsn)
 	if err != nil {
 		return nil, err
@@ -50,7 +51,7 @@ func (s *DBStorage) GetMetric(ctx context.Context, mType models.MetricsType, mNa
 	err = s.db.GetContext(ctx, metric, `SELECT name, type, delta, value FROM metrics WHERE name = $1 AND type = $2`, mName, mType)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
-		return nil, nil
+		return nil, ErrUnknownMetric
 	case err != nil:
 		return nil, err
 	default:
@@ -64,7 +65,7 @@ func (s *DBStorage) Ping(ctx context.Context) error {
 	return s.db.Ping()
 }
 func (s *DBStorage) UpdateMetric(ctx context.Context, metric models.Metric) error {
-	query := `INSERT INTO metrics (name, type, delta, value) VALUES ($1, $2, $3, $4) ON CONFLICT(name, type) DO UPDATE SET delta = $3, value = $4`
+	query := `INSERT INTO metrics (name, type, delta, value) VALUES ($1, $2, $3, $4) ON CONFLICT(name, type) DO UPDATE SET delta = (CASE WHEN metrics.delta IS NULL THEN NULL ELSE metrics.delta + $3 END), value = $4`
 	_, err := s.db.ExecContext(ctx, query, metric.ID, metric.MType, metric.Delta, metric.Value)
 	return err
 }
@@ -82,8 +83,8 @@ func (s *DBStorage) UpdateMetrics(ctx context.Context, metrics models.MetricsLis
 
 		err := s.UpdateMetric(ctx, *metric)
 		if err != nil {
-			tx.Rollback()
-			return err
+			rollbackErr := tx.Rollback()
+			return errors.Join(err, rollbackErr)
 		}
 	}
 
