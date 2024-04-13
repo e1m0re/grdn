@@ -7,6 +7,15 @@ test:
 run-agent:
 	go run cmd/agent/main.go cmd/agent/flags.go
 
+build-agent:
+	go build -o bin/agent cmd/agent/*.go
+
+build-server:
+	go build -o bin/server cmd/server/*go
+
+build:
+	go build -o bin/agent cmd/agent/*.go
+	go build -o bin/server cmd/server/*go
 run-server:
 	go run cmd/server/main.go
 

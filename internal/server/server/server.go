@@ -87,8 +87,11 @@ func (srv *Server) initRoutes() {
 			r.Get("/{mType}/{mName}", srv.getMetricValue)
 		})
 		r.Route("/update", func(r chi.Router) {
+			r.Post("/", srv.updateMetricV2)
+			r.Post("/{mType}/{mName}/{mValue}", srv.updateMetricV1)
+		})
+		r.Route("/updates", func(r chi.Router) {
 			r.Post("/", srv.updateMetrics)
-			r.Post("/{mType}/{mName}/{mValue}", srv.updateMetric)
 		})
 	})
 }

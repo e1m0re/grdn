@@ -114,7 +114,7 @@ func (s *MemStorage) LoadStorageFromFile() error {
 func (s *MemStorage) Ping(ctx context.Context) error {
 	return nil
 }
-func (s *MemStorage) UpdateMetricValue(ctx context.Context, metric models.Metric) error {
+func (s *MemStorage) UpdateMetric(ctx context.Context, metric models.Metric) error {
 	switch metric.MType {
 	case models.GaugeType:
 		s.Gauges[metric.ID] = *metric.Value
@@ -128,6 +128,16 @@ func (s *MemStorage) UpdateMetricValue(ctx context.Context, metric models.Metric
 		err := s.DumpStorageToFile()
 		if err != nil {
 			slog.Error(fmt.Sprintf("error on save data to HDD: %s", err))
+		}
+	}
+
+	return nil
+}
+func (s *MemStorage) UpdateMetrics(ctx context.Context, metrics models.MetricsList) error {
+	for _, metric := range metrics {
+		err := s.UpdateMetric(ctx, *metric)
+		if err != nil {
+			return err
 		}
 	}
 

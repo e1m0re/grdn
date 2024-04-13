@@ -12,31 +12,6 @@ import (
 	"github.com/e1m0re/grdn/internal/models"
 )
 
-func (srv *Server) updateMetric(response http.ResponseWriter, request *http.Request) {
-	if request.Method != http.MethodPost {
-		http.Error(response, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	metric := models.Metric{
-		ID:    chi.URLParam(request, "mName"),
-		MType: chi.URLParam(request, "mType"),
-	}
-	err := metric.ValueFromString(chi.URLParam(request, "mValue"))
-	if err != nil {
-		slog.Error(err.Error())
-		response.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	err = srv.store.UpdateMetricValue(request.Context(), metric)
-	if err != nil {
-		slog.Error(err.Error())
-		response.WriteHeader(http.StatusBadRequest)
-		return
-	}
-}
-
 func (srv *Server) getMainPage(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "text/html")
 
@@ -138,29 +113,77 @@ func (srv *Server) getMetricValueV2(response http.ResponseWriter, request *http.
 	response.WriteHeader(http.StatusOK)
 }
 
+func (srv *Server) updateMetricV1(response http.ResponseWriter, request *http.Request) {
+	if request.Method != http.MethodPost {
+		http.Error(response, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	metric := models.Metric{
+		ID:    chi.URLParam(request, "mName"),
+		MType: chi.URLParam(request, "mType"),
+	}
+	err := metric.ValueFromString(chi.URLParam(request, "mValue"))
+	if err != nil {
+		slog.Error(err.Error())
+		response.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err = srv.store.UpdateMetric(request.Context(), metric)
+	if err != nil {
+		slog.Error(err.Error())
+		response.WriteHeader(http.StatusBadRequest)
+		return
+	}
+}
+
+func (srv *Server) updateMetricV2(response http.ResponseWriter, request *http.Request) {
+	if request.Method != http.MethodPost {
+		http.Error(response, "Method not allowed.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var buf bytes.Buffer
+	_, err := buf.ReadFrom(request.Body)
+	if err != nil {
+		http.Error(response, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var data models.Metric
+	if err = json.Unmarshal(buf.Bytes(), &data); err != nil {
+		http.Error(response, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = srv.store.UpdateMetric(request.Context(), data)
+	if err != nil {
+		response.WriteHeader(http.StatusBadRequest)
+		return
+	}
+}
+
 func (srv *Server) updateMetrics(response http.ResponseWriter, request *http.Request) {
 	if request.Method != http.MethodPost {
 		http.Error(response, "Method not allowed.", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var data models.Metric
-
 	var buf bytes.Buffer
-
 	_, err := buf.ReadFrom(request.Body)
-
 	if err != nil {
 		http.Error(response, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if err = json.Unmarshal(buf.Bytes(), &data); err != nil {
+	var metrics models.MetricsList
+	if err = json.Unmarshal(buf.Bytes(), &metrics); err != nil {
 		http.Error(response, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = srv.store.UpdateMetricValue(request.Context(), data)
+	err = srv.store.UpdateMetrics(request.Context(), metrics)
 	if err != nil {
 		response.WriteHeader(http.StatusBadRequest)
 		return

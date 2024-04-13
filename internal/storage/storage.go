@@ -13,7 +13,8 @@ type Interface interface {
 	GetMetric(ctx context.Context, mType models.MetricsType, mName string) (metric *models.Metric, err error)
 	LoadStorageFromFile() error
 	Ping(ctx context.Context) error
-	UpdateMetricValue(ctx context.Context, metric models.Metric) error
+	UpdateMetric(ctx context.Context, metric models.Metric) error
+	UpdateMetrics(ctx context.Context, metrics models.MetricsList) error
 }
 
 type GaugeDateType = float64

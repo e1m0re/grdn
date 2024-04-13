@@ -63,8 +63,31 @@ func (s *DBStorage) LoadStorageFromFile() error {
 func (s *DBStorage) Ping(ctx context.Context) error {
 	return s.db.Ping()
 }
-func (s *DBStorage) UpdateMetricValue(ctx context.Context, metric models.Metric) error {
+func (s *DBStorage) UpdateMetric(ctx context.Context, metric models.Metric) error {
 	query := `INSERT INTO metrics (name, type, delta, value) VALUES ($1, $2, $3, $4) ON CONFLICT(name, type) DO UPDATE SET delta = $3, value = $4`
 	_, err := s.db.ExecContext(ctx, query, metric.ID, metric.MType, metric.Delta, metric.Value)
+	return err
+}
+func (s *DBStorage) UpdateMetrics(ctx context.Context, metrics models.MetricsList) error {
+	if len(metrics) == 0 {
+		return nil
+	}
+
+	tx, err := s.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	for _, metric := range metrics {
+
+		err := s.UpdateMetric(ctx, *metric)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	err = tx.Commit()
+
 	return err
 }

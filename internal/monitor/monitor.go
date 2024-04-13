@@ -17,15 +17,17 @@ type MetricsState struct {
 }
 
 type MetricsMonitor struct {
-	data MetricsState
+	data      MetricsState
+	apiClient *apiclient.API
 }
 
-func NewMetricsMonitor() *MetricsMonitor {
+func NewMetricsMonitor(apiClient *apiclient.API) *MetricsMonitor {
 	return &MetricsMonitor{
 		data: MetricsState{
 			Gauges:   make(map[storage.GaugeName]storage.GaugeDateType),
 			Counters: make(map[storage.CounterName]storage.CounterDateType),
 		},
+		apiClient: apiClient,
 	}
 }
 
@@ -71,35 +73,36 @@ func (m *MetricsMonitor) UpdateData() {
 func (m *MetricsMonitor) GetData() models.MetricsList {
 	result := make(models.MetricsList, 0)
 	for key, value := range m.data.Gauges {
+		x := value
 		result = append(result, &models.Metric{
 			ID:    key,
 			MType: models.GaugeType,
-			Value: &value,
+			Value: &x,
 		})
 	}
 
 	for key, value := range m.data.Counters {
+		x := value
 		result = append(result, &models.Metric{
 			ID:    key,
 			MType: models.CounterType,
-			Delta: &value,
+			Delta: &x,
 		})
 	}
 
 	return result
 }
 
-func (m *MetricsMonitor) SendDataToServers(api *apiclient.API) {
-	for _, row := range m.GetData() {
+func (m *MetricsMonitor) SendDataToServer() {
+	metrics := m.GetData()
 
-		content, err := json.Marshal(row)
-		if err != nil {
-			slog.Error(err.Error())
-		}
+	content, err := json.Marshal(metrics)
+	if err != nil {
+		slog.Error(err.Error())
+	}
 
-		err = api.DoRequest("/update", &content)
-		if err != nil {
-			slog.Error(err.Error())
-		}
+	err = m.apiClient.DoRequest("/updates/", &content)
+	if err != nil {
+		slog.Error(err.Error())
 	}
 }

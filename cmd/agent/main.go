@@ -10,13 +10,13 @@ import (
 func main() {
 	options := config()
 
-	api := apiclient.NewAPI("http://" + options.serverAddr)
-	monitor1 := monitor.NewMetricsMonitor()
+	apiClient := apiclient.NewAPI("http://" + options.serverAddr)
+	monitor1 := monitor.NewMetricsMonitor(apiClient)
 
 	for {
 		<-time.After(time.Duration(options.pollInterval) * time.Second)
 		monitor1.UpdateData()
 		<-time.After(time.Duration(options.reportInterval) * time.Second)
-		monitor1.SendDataToServers(api)
+		monitor1.SendDataToServer()
 	}
 }
