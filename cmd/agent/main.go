@@ -1,22 +1,54 @@
 package main
 
 import (
-	"time"
+	"context"
+	"fmt"
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
 
-	"github.com/e1m0re/grdn/internal/apiclient"
-	"github.com/e1m0re/grdn/internal/monitor"
+	"go.uber.org/zap"
+
+	"github.com/e1m0re/grdn/internal/agent/app"
+	"github.com/e1m0re/grdn/internal/agent/config"
 )
 
+var logger *zap.Logger
+
+func init() {
+	var err error
+	logger, err = zap.NewProduction()
+	if err != nil {
+		slog.Error(err.Error())
+	}
+
+	defer func(logger *zap.Logger) {
+		err := logger.Sync()
+		if err != nil {
+			fmt.Printf("failed to sync logger: %s", err.Error())
+		}
+	}(logger)
+}
+
 func main() {
-	options := config()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	api := apiclient.NewAPI("http://" + options.serverAddr)
-	monitor1 := monitor.NewMetricsMonitor()
+	go func() {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
-	for {
-		<-time.After(time.Duration(options.pollInterval) * time.Second)
-		monitor1.UpdateData()
-		<-time.After(time.Duration(options.reportInterval) * time.Second)
-		monitor1.SendDataToServers(api)
+		<-c
+		cancel()
+	}()
+
+	cfg := config.GetConfig()
+
+	app1 := app.NewApp(cfg)
+
+	err := app1.Start(ctx)
+	if err != nil {
+		slog.Error(err.Error())
 	}
 }

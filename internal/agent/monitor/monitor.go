@@ -1,12 +1,9 @@
 package monitor
 
 import (
-	"encoding/json"
-	"log/slog"
 	"math/rand"
 	"runtime"
 
-	"github.com/e1m0re/grdn/internal/apiclient"
 	"github.com/e1m0re/grdn/internal/models"
 	"github.com/e1m0re/grdn/internal/storage"
 )
@@ -68,38 +65,25 @@ func (m *MetricsMonitor) UpdateData() {
 	m.data.Gauges[storage.TotalAlloc] = storage.GaugeDateType(rtm.TotalAlloc)
 }
 
-func (m *MetricsMonitor) GetData() models.MetricsList {
+func (m *MetricsMonitor) GetMetricsList() models.MetricsList {
 	result := make(models.MetricsList, 0)
 	for key, value := range m.data.Gauges {
-		result = append(result, &models.Metrics{
+		x := value
+		result = append(result, &models.Metric{
 			ID:    key,
 			MType: models.GaugeType,
-			Value: &value,
+			Value: &x,
 		})
 	}
 
 	for key, value := range m.data.Counters {
-		result = append(result, &models.Metrics{
+		x := value
+		result = append(result, &models.Metric{
 			ID:    key,
 			MType: models.CounterType,
-			Delta: &value,
+			Delta: &x,
 		})
 	}
 
 	return result
-}
-
-func (m *MetricsMonitor) SendDataToServers(api *apiclient.API) {
-	for _, row := range m.GetData() {
-
-		content, err := json.Marshal(row)
-		if err != nil {
-			slog.Error(err.Error())
-		}
-
-		err = api.DoRequest("/update", &content)
-		if err != nil {
-			slog.Error(err.Error())
-		}
-	}
 }

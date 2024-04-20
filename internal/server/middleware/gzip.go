@@ -1,4 +1,4 @@
-package gzip
+package middleware
 
 import (
 	"compress/gzip"
@@ -36,7 +36,7 @@ func (c *compressReader) Close() error {
 	return c.zr.Close()
 }
 
-func Middleware(next http.Handler) http.Handler {
+func GZipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(
 		func(writer http.ResponseWriter, request *http.Request) {
 
