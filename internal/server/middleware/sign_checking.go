@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -10,8 +11,6 @@ import (
 
 func SignChecking(key string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-		h := hmac.New(sha256.New, []byte(key))
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == "GET" {
 				next.ServeHTTP(w, r)
@@ -29,9 +28,12 @@ func SignChecking(key string) func(next http.Handler) http.Handler {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
+			r.Body.Close()
+			r.Body = io.NopCloser(bytes.NewBuffer(body))
+
+			h := hmac.New(sha256.New, []byte(key))
 			h.Write(body)
 			sum := base64.StdEncoding.EncodeToString(h.Sum(nil))
-
 			if sum != ctrlSum {
 				w.WriteHeader(http.StatusBadRequest)
 				return

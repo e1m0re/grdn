@@ -77,7 +77,8 @@ func (api *APIClient) SendMetricsData(data *[]byte) error {
 	if len(api.key) > 0 {
 		h := hmac.New(sha256.New, api.key)
 		h.Write(rawData)
-		request.Header.Set("HashSHA256", base64.StdEncoding.EncodeToString(h.Sum(nil)))
+		sum := base64.StdEncoding.EncodeToString(h.Sum(nil))
+		request.Header.Set("HashSHA256", sum)
 	}
 
 	response, err := api.DoRequest(request)

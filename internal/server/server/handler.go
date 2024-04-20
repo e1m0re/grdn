@@ -74,12 +74,12 @@ func (srv *Server) getMetricValueV2(response http.ResponseWriter, request *http.
 	_, err := buf.ReadFrom(request.Body)
 
 	if err != nil {
-		http.Error(response, err.Error(), http.StatusBadRequest)
+		http.Error(response, fmt.Sprintf("error reading body: %s", err), http.StatusBadRequest)
 	}
 
 	var reqData models.Metric
 	if err = json.Unmarshal(buf.Bytes(), &reqData); err != nil {
-		http.Error(response, err.Error(), http.StatusBadRequest)
+		http.Error(response, fmt.Sprintf("error parsing body: %s", err), http.StatusBadRequest)
 		return
 	}
 
