@@ -69,9 +69,15 @@ func (srv *Server) initStore(ctx context.Context) error {
 }
 
 func (srv *Server) initRoutes() {
-	srv.router.Use(grdnMiddleware.LoggingMiddleware)
-	srv.router.Use(grdnMiddleware.GZipMiddleware)
+	srv.router.Use(grdnMiddleware.Logging())
+	srv.router.Use(grdnMiddleware.UnzipContent())
+	if len(srv.cfg.Key) > 0 {
+		srv.router.Use(grdnMiddleware.SignChecking(srv.cfg.Key))
+	}
 	srv.router.Use(middleware.Compress(5, "text/html", "application/json"))
+	if len(srv.cfg.Key) > 0 {
+		srv.router.Use(grdnMiddleware.SignResponse(srv.cfg.Key))
+	}
 
 	srv.router.Route("/", func(r chi.Router) {
 		r.Get("/", srv.getMainPage)

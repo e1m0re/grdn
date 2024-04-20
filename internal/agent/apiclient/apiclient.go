@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/base64"
 	"log/slog"
 	"net/http"
 )
@@ -59,7 +60,7 @@ func (api *APIClient) DoRequest(request *http.Request) (*http.Response, error) {
 }
 
 func (api *APIClient) SendMetricsData(data *[]byte) error {
-
+	rawData := *data
 	cBody, err := compressBody(data)
 	if err != nil {
 		return err
@@ -75,8 +76,8 @@ func (api *APIClient) SendMetricsData(data *[]byte) error {
 
 	if len(api.key) > 0 {
 		h := hmac.New(sha256.New, api.key)
-		h.Write(*data)
-		request.Header.Set("HashSHA256", string(h.Sum(nil)))
+		h.Write(rawData)
+		request.Header.Set("HashSHA256", base64.StdEncoding.EncodeToString(h.Sum(nil)))
 	}
 
 	response, err := api.DoRequest(request)

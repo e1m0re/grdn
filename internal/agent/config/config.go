@@ -24,7 +24,7 @@ func GetConfig() *Config {
 	flag.StringVar(&config.ServerAddr, "a", "localhost:8080", "address and port to run server")
 	flag.UintVar(&reportInterval, "r", 10, "frequency of sending metrics to the server")
 	flag.UintVar(&pollInterval, "p", 2, "frequency of polling metrics from the package")
-	flag.StringVar(&config.Key, "k", "", "hash key")
+	flag.StringVar(&config.Key, "k", "", "key to use for encryption")
 	flag.Parse()
 
 	if envServerAddr := os.Getenv("ADDRESS"); envServerAddr != "" {

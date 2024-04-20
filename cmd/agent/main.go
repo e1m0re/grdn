@@ -29,6 +29,9 @@ func init() {
 			fmt.Printf("failed to sync logger: %s", err.Error())
 		}
 	}(logger)
+
+	mySlogger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(mySlogger)
 }
 
 func main() {
