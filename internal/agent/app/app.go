@@ -3,9 +3,10 @@ package app
 import (
 	"context"
 	"encoding/json"
-	"golang.org/x/sync/errgroup"
 	"log/slog"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/e1m0re/grdn/internal/agent/apiclient"
 	"github.com/e1m0re/grdn/internal/agent/config"
@@ -20,7 +21,7 @@ type App struct {
 
 func NewApp(cfg *config.Config) *App {
 	return &App{
-		apiClient: apiclient.NewAPI("http://" + cfg.ServerAddr),
+		apiClient: apiclient.NewAPI("http://"+cfg.ServerAddr, []byte(cfg.Key)),
 		cfg:       cfg,
 		monitor:   monitor.NewMetricsMonitor(),
 	}
