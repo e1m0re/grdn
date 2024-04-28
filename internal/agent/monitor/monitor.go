@@ -1,8 +1,14 @@
 package monitor
 
 import (
+	"context"
+	"fmt"
 	"math/rand"
 	"runtime"
+	"sync"
+
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 
 	"github.com/e1m0re/grdn/internal/models"
 	"github.com/e1m0re/grdn/internal/storage"
@@ -14,6 +20,7 @@ type MetricsState struct {
 }
 
 type MetricsMonitor struct {
+	mx   sync.RWMutex
 	data MetricsState
 }
 
@@ -27,6 +34,9 @@ func NewMetricsMonitor() *MetricsMonitor {
 }
 
 func (m *MetricsMonitor) UpdateData() {
+	m.mx.Lock()
+	defer m.mx.Unlock()
+
 	m.data.Counters[storage.PollCount]++
 
 	r := rand.New(rand.NewSource(m.data.Counters[storage.PollCount]))
@@ -65,7 +75,29 @@ func (m *MetricsMonitor) UpdateData() {
 	m.data.Gauges[storage.TotalAlloc] = storage.GaugeDateType(rtm.TotalAlloc)
 }
 
+func (m *MetricsMonitor) UpdateGOPS(ctx context.Context) {
+	m.mx.Lock()
+	defer m.mx.Unlock()
+
+	memoryInfo, _ := mem.VirtualMemoryWithContext(ctx)
+
+	m.data.Gauges["TotalMemory"] = storage.GaugeDateType(memoryInfo.Total)
+	m.data.Gauges["FreeMemory"] = storage.GaugeDateType(memoryInfo.Free)
+
+	percents, err := cpu.PercentWithContext(ctx, 0, true)
+	if err != nil {
+		panic(err)
+	}
+
+	for idx, percent := range percents {
+		m.data.Gauges[fmt.Sprintf("CPUutilization%d", idx)] = percent
+	}
+}
+
 func (m *MetricsMonitor) GetMetricsList() models.MetricsList {
+	m.mx.RLock()
+	defer m.mx.RUnlock()
+
 	result := make(models.MetricsList, 0)
 	for key, value := range m.data.Gauges {
 		x := value

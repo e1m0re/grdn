@@ -12,6 +12,7 @@ type Config struct {
 	ReportInterval time.Duration
 	PollInterval   time.Duration
 	Key            string
+	RateLimit      int
 }
 
 func GetConfig() *Config {
@@ -25,6 +26,7 @@ func GetConfig() *Config {
 	flag.UintVar(&reportInterval, "r", 10, "frequency of sending metrics to the server")
 	flag.UintVar(&pollInterval, "p", 2, "frequency of polling metrics from the package")
 	flag.StringVar(&config.Key, "k", "", "key to use for encryption")
+	flag.IntVar(&config.RateLimit, "l", 1, "limit of threads count")
 	flag.Parse()
 
 	if envServerAddr := os.Getenv("ADDRESS"); envServerAddr != "" {
@@ -49,6 +51,16 @@ func GetConfig() *Config {
 
 	if envKey := os.Getenv("KEY"); envKey != "" {
 		config.Key = envKey
+	}
+
+	if envRateLimit := os.Getenv("RATE_LIMIT"); envRateLimit != "" {
+		envValue, err := strconv.Atoi(envRateLimit)
+		if err == nil {
+			config.RateLimit = envValue
+		}
+	}
+	if config.RateLimit <= 0 {
+		config.RateLimit = 1
 	}
 
 	return &config
