@@ -36,25 +36,25 @@ func (c *compressReader) Close() error {
 	return c.zr.Close()
 }
 
-func GZipMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(
-		func(writer http.ResponseWriter, request *http.Request) {
+func UnzipContent() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				contentEncoding := r.Header.Get("Content-Encoding")
+				sendsGzip := strings.Contains(contentEncoding, "gzip")
 
-			contentEncoding := request.Header.Get("Content-Encoding")
-			sendsGzip := strings.Contains(contentEncoding, "gzip")
+				if sendsGzip {
+					cr, err := newCompressReader(r.Body)
+					if err != nil {
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
 
-			if sendsGzip {
-				cr, err := newCompressReader(request.Body)
-				if err != nil {
-					writer.WriteHeader(http.StatusInternalServerError)
-					return
+					r.Body = cr
+					defer cr.Close()
 				}
 
-				request.Body = cr
-				defer cr.Close()
-			}
-
-			next.ServeHTTP(writer, request)
-		},
-	)
+				next.ServeHTTP(w, r)
+			})
+	}
 }

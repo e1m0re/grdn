@@ -16,6 +16,7 @@ type Config struct {
 	StoreInternal   time.Duration
 	VerboseMode     bool
 	DatabaseDSN     string
+	Key             string
 }
 
 func GetConfig() *Config {
@@ -30,6 +31,7 @@ func GetConfig() *Config {
 	flag.StringVar(&config.FileStoragePath, "f", "/tmp/metrics-db.json", "file path for DB file")
 	flag.BoolVar(&config.RestoreData, "r", true, "save or don't save data to HDD on shutdown")
 	flag.StringVar(&config.DatabaseDSN, "d", "", "database connection string")
+	flag.StringVar(&config.Key, "k", "", "key to use for encryption")
 	flag.Parse()
 
 	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
@@ -41,27 +43,27 @@ func GetConfig() *Config {
 		config.LoggerLevel = "debug"
 	}
 
-	envStoreInterval := os.Getenv("STORE_INTERVAL")
-	if envStoreInterval != "" {
+	if envStoreInterval := os.Getenv("STORE_INTERVAL"); envStoreInterval != "" {
 		value, err := time.ParseDuration(envStoreInterval)
 		if err == nil {
 			config.StoreInternal = value
 		}
 	}
 
-	envFileStoragePath := os.Getenv("FILE_STORAGE_PATH")
-	if envFileStoragePath != "" {
+	if envFileStoragePath := os.Getenv("FILE_STORAGE_PATH"); envFileStoragePath != "" {
 		config.FileStoragePath = envFileStoragePath
 	}
 
-	envRestoreData := os.Getenv("RESTORE")
-	if envRestoreData != "" {
+	if envRestoreData := os.Getenv("RESTORE"); envRestoreData != "" {
 		config.RestoreData = envRestoreData == "true"
 	}
 
-	envDatabaseDSN := os.Getenv("DATABASE_DSN")
-	if envDatabaseDSN != "" {
+	if envDatabaseDSN := os.Getenv("DATABASE_DSN"); envDatabaseDSN != "" {
 		config.DatabaseDSN = envDatabaseDSN
+	}
+
+	if envKey := os.Getenv("KEY"); envKey != "" {
+		config.Key = envKey
 	}
 
 	return &config

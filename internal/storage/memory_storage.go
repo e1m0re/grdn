@@ -56,7 +56,6 @@ func (s *MemStorage) DumpStorageToFile() error {
 		return err
 	}
 
-	slog.Info(string(data))
 	_, err = file.Write(data)
 
 	return err

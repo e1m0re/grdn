@@ -40,12 +40,12 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	return size, err
 }
 
-func LoggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(
-		func(writer http.ResponseWriter, request *http.Request) {
+func Logging() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if err := recover(); err != nil {
-					writer.WriteHeader(http.StatusInternalServerError)
+					w.WriteHeader(http.StatusInternalServerError)
 					slog.Error("Internal error",
 						slog.String("error", fmt.Sprintf("%v", err)),
 						slog.String("stack", string(debug.Stack())),
@@ -54,17 +54,18 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 			}()
 
 			start := time.Now()
-			wrapped := wrapResponseWriter(writer)
-			next.ServeHTTP(wrapped, request)
+			wrapped := wrapResponseWriter(w)
+			next.ServeHTTP(wrapped, r)
 
 			duration := time.Since(start)
 			slog.Info("Incoming request",
-				slog.String("method", request.Method),
-				slog.String("path", request.URL.Path),
+				slog.String("method", r.Method),
+				slog.String("path", r.URL.Path),
 				slog.Int("status", wrapped.status),
 				slog.Duration("duration", duration),
 				slog.Int("size", wrapped.size),
+				slog.String("header", r.Header.Get("HashSHA256")),
 			)
-		},
-	)
+		})
+	}
 }
