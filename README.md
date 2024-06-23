@@ -1,3 +1,4 @@
+[![codecov](https://codecov.io/gh/e1m0re/grdn/graph/badge.svg?token=EJG58PATS3)](https://codecov.io/gh/e1m0re/grdn)
 # go-musthave-metrics-tpl
 
 Шаблон репозитория для трека «Сервер сбора метрик и алертинга».
