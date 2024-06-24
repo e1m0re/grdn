@@ -31,7 +31,7 @@ func (s *DBStorage) Close() error {
 func (s *DBStorage) DumpStorageToFile() error {
 	return nil
 }
-func (s *DBStorage) GetAllMetrics(ctx context.Context) ([]string, error) {
+func (s *DBStorage) GetMetricsList(ctx context.Context) ([]string, error) {
 
 	var metrics models.MetricsList
 	err := s.db.SelectContext(ctx, &metrics, "SELECT name, type, delta, value FROM metrics")

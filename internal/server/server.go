@@ -8,41 +8,43 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/e1m0re/grdn/internal/db/migrations"
-	"github.com/e1m0re/grdn/internal/server/config"
-	grdnMiddleware "github.com/e1m0re/grdn/internal/server/middleware"
+	appHandler "github.com/e1m0re/grdn/internal/server/handler"
+	"github.com/e1m0re/grdn/internal/service"
 	"github.com/e1m0re/grdn/internal/storage"
+	"github.com/e1m0re/grdn/internal/utils"
 )
 
 type Server struct {
-	cfg        *config.Config
-	router     *chi.Mux
+	cfg        *Config
 	httpServer *http.Server
-	store      storage.Interface
+	store      storage.StoreManager
 }
 
-func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
+func NewServer(cfg *Config) (*Server, error) {
 	srv := &Server{
-		cfg:    cfg,
-		router: chi.NewRouter(),
+		cfg: cfg,
 	}
 
-	srv.initRoutes()
+	err := srv.initStore()
 
-	err := srv.initStore(ctx)
+	services := service.NewServices(srv.store)
+	handler := appHandler.NewHandler(services)
+	srv.httpServer = &http.Server{
+		Addr:    cfg.ServerAddr,
+		Handler: handler.NewRouter(cfg.Key),
+	}
 
 	return srv, err
 }
 
-func (srv *Server) initStore(ctx context.Context) error {
+func (srv *Server) initStore() error {
 	if srv.cfg.DatabaseDSN != "" {
-		err := srv.migrate(ctx)
+		err := srv.migrate()
 		if err != nil {
 			return err
 		}
@@ -68,35 +70,7 @@ func (srv *Server) initStore(ctx context.Context) error {
 	return nil
 }
 
-func (srv *Server) initRoutes() {
-	srv.router.Use(grdnMiddleware.Logging())
-	srv.router.Use(grdnMiddleware.UnzipContent())
-	if len(srv.cfg.Key) > 0 {
-		srv.router.Use(grdnMiddleware.SignChecking(srv.cfg.Key))
-	}
-	srv.router.Use(middleware.Compress(5, "text/html", "application/json"))
-	if len(srv.cfg.Key) > 0 {
-		srv.router.Use(grdnMiddleware.SignResponse(srv.cfg.Key))
-	}
-
-	srv.router.Route("/", func(r chi.Router) {
-		r.Get("/", srv.getMainPage)
-		r.Get("/ping", srv.checkDBConnection)
-		r.Route("/value", func(r chi.Router) {
-			r.Post("/", srv.getMetricValueV2)
-			r.Get("/{mType}/{mName}", srv.getMetricValue)
-		})
-		r.Route("/update", func(r chi.Router) {
-			r.Post("/", srv.updateMetricV2)
-			r.Post("/{mType}/{mName}/{mValue}", srv.updateMetricV1)
-		})
-		r.Route("/updates", func(r chi.Router) {
-			r.Post("/", srv.updateMetrics)
-		})
-	})
-}
-
-func (srv *Server) migrate(ctx context.Context) error {
+func (srv *Server) migrate() error {
 	stdlib.GetDefaultDriver()
 
 	db, err := goose.OpenDBWithDriver("pgx", srv.cfg.DatabaseDSN)
@@ -118,12 +92,7 @@ func (srv *Server) migrate(ctx context.Context) error {
 	return db.Close()
 }
 
-func (srv *Server) startHTTPServer(ctx context.Context) error {
-	srv.httpServer = &http.Server{
-		Addr:    srv.cfg.ServerAddr,
-		Handler: srv.router,
-	}
-
+func (srv *Server) startHTTPServer() error {
 	slog.Info(fmt.Sprintf("Running server on %s", srv.cfg.ServerAddr))
 	err := srv.httpServer.ListenAndServe()
 	if err != nil && errors.Is(err, http.ErrServerClosed) {
@@ -162,7 +131,7 @@ func (srv *Server) Start(ctx context.Context) error {
 	grp, ctx := errgroup.WithContext(ctx)
 
 	grp.Go(func() error {
-		return srv.startHTTPServer(ctx)
+		return srv.startHTTPServer()
 	})
 
 	grp.Go(func() error {
@@ -178,7 +147,7 @@ func (srv *Server) Start(ctx context.Context) error {
 				case <-ctx.Done():
 					return nil
 				case <-time.After(srv.cfg.StoreInternal):
-					err := retryFunc(ctx, func() error {
+					err := utils.RetryFunc(ctx, func() error {
 						return srv.store.DumpStorageToFile()
 					})
 					if err != nil {

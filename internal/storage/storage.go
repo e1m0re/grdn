@@ -6,10 +6,11 @@ import (
 	"github.com/e1m0re/grdn/internal/models"
 )
 
-type Interface interface {
+//go:generate go run github.com/vektra/mockery/v2@v2.43.1 --name=StoreManager
+type StoreManager interface {
 	Close() error
 	DumpStorageToFile() error
-	GetAllMetrics(ctx context.Context) ([]string, error)
+	GetMetricsList(ctx context.Context) ([]string, error)
 	GetMetric(ctx context.Context, mType models.MetricsType, mName string) (metric *models.Metric, err error)
 	LoadStorageFromFile() error
 	Ping(ctx context.Context) error

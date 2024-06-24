@@ -13,8 +13,7 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
-	"github.com/e1m0re/grdn/internal/server/config"
-	"github.com/e1m0re/grdn/internal/server/server"
+	"github.com/e1m0re/grdn/internal/server"
 )
 
 func main() {
@@ -29,12 +28,12 @@ func main() {
 		cancel()
 	}()
 
-	cfg := config.GetConfig()
+	cfg := server.InitConfig()
 
-	mySlogger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel}))
-	slog.SetDefault(mySlogger)
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel}))
+	slog.SetDefault(logger)
 
-	srv, err := server.NewServer(ctx, cfg)
+	srv, err := server.NewServer(cfg)
 	if err != nil {
 		slog.Error(err.Error())
 	}

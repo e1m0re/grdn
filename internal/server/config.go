@@ -1,4 +1,4 @@
-package config
+package server
 
 import (
 	"flag"
@@ -19,7 +19,7 @@ type Config struct {
 	Key             string
 }
 
-func GetConfig() *Config {
+func InitConfig() *Config {
 	config := Config{
 		LogLevel:    slog.LevelInfo,
 		LoggerLevel: "info",

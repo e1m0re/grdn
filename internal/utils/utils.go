@@ -1,4 +1,4 @@
-package server
+package utils
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"github.com/avast/retry-go"
 )
 
-func retryFunc(ctx context.Context, retryableFunc retry.RetryableFunc) error {
+func RetryFunc(ctx context.Context, retryableFunc retry.RetryableFunc) error {
 	return retry.Do(
 		retryableFunc,
 		retry.Attempts(3),

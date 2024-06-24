@@ -60,7 +60,7 @@ func (s *MemStorage) DumpStorageToFile() error {
 
 	return err
 }
-func (s *MemStorage) GetAllMetrics(ctx context.Context) ([]string, error) {
+func (s *MemStorage) GetMetricsList(ctx context.Context) ([]string, error) {
 	s.mx.RLock()
 	defer s.mx.RUnlock()
 
