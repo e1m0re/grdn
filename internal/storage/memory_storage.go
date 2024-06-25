@@ -64,13 +64,16 @@ func (s *MemStorage) GetMetricsList(ctx context.Context) ([]string, error) {
 	s.mx.RLock()
 	defer s.mx.RUnlock()
 
-	var result []string
+	result := make([]string, len(s.gauges)+len(s.counters))
+	i := 0
 	for key, value := range s.gauges {
-		result = append(result, fmt.Sprintf("%s: %s", key, strconv.FormatFloat(value, 'f', -1, 64)))
+		result[i] = fmt.Sprintf("%s: %s", key, strconv.FormatFloat(value, 'f', -1, 64))
+		i++
 	}
 
 	for key, value := range s.counters {
-		result = append(result, fmt.Sprintf("%s: %v", key, value))
+		result[i] = fmt.Sprintf("%s: %v", key, value)
+		i++
 	}
 
 	return result, nil
