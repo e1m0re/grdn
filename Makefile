@@ -1,6 +1,9 @@
 lint:
 	golangci-lint run ./...
 
+format-code:
+	goimports --local "github.com/e1m0re/grdn" -w .
+
 test:
 	go test -race -covermode=atomic -coverprofile=coverage.out ./...
 
@@ -15,7 +18,8 @@ build-server:
 
 build:
 	go build -o bin/agent cmd/agent/*.go
-	go build -o bin/server cmd/server/*go
+	go build -o bin/server cmd/server/*.go
+
 run-server:
 	go run cmd/server/main.go
 

@@ -1,10 +1,12 @@
 package monitor
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/e1m0re/grdn/internal/models"
 	"github.com/e1m0re/grdn/internal/storage"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestMetricsMonitor_GetMetricsList(t *testing.T) {
