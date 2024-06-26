@@ -1,3 +1,4 @@
+// Package utils contains various utilities.
 package utils
 
 import (
@@ -7,6 +8,7 @@ import (
 	"github.com/avast/retry-go"
 )
 
+// RetryFunc re-calls the specified method if errors occur.
 func RetryFunc(ctx context.Context, retryableFunc retry.RetryableFunc) error {
 	return retry.Do(
 		retryableFunc,

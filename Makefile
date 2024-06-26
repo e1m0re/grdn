@@ -25,3 +25,6 @@ run-server:
 
 run-server-db:
 	DATABASE_DSN="postgresql://grdnuser:grdnpassword@192.168.33.26:5432/grdn" go run cmd/server/main.go
+
+doc:
+	godoc -http=:8081 -goroot="/Users/elmore/go/src/grdn/"
