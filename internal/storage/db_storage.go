@@ -80,8 +80,7 @@ func (s *DBStorage) UpdateMetrics(ctx context.Context, metrics models.MetricsLis
 	}
 
 	for _, metric := range metrics {
-
-		err := s.UpdateMetric(ctx, *metric)
+		err = s.UpdateMetric(ctx, *metric)
 		if err != nil {
 			rollbackErr := tx.Rollback()
 			return errors.Join(err, rollbackErr)

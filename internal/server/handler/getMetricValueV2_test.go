@@ -26,9 +26,9 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 		method string
 	}
 	type want struct {
-		expectedStatusCode   int
 		expectedHeaders      map[string]string
 		expectedResponseBody string
+		expectedStatusCode   int
 	}
 	tests := []struct {
 		name         string
@@ -145,7 +145,7 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 			want: want{
 				expectedStatusCode:   http.StatusOK,
 				expectedHeaders:      map[string]string{"Content-Type": "application/json"},
-				expectedResponseBody: fmt.Sprintf("{\"id\":\"metricId\",\"type\":\"%s\",\"delta\":%d}", models.CounterType, delta),
+				expectedResponseBody: fmt.Sprintf("{\"delta\":%d,\"type\":\"%s\",\"id\":\"metricId\"}", delta, models.CounterType),
 			},
 		},
 		{
@@ -173,7 +173,7 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 			want: want{
 				expectedStatusCode:   http.StatusOK,
 				expectedHeaders:      map[string]string{"Content-Type": "application/json"},
-				expectedResponseBody: fmt.Sprintf("{\"id\":\"metricId\",\"type\":\"%s\",\"value\":%f}", models.GaugeType, value),
+				expectedResponseBody: fmt.Sprintf("{\"value\":%f,\"type\":\"%s\",\"id\":\"metricId\"}", value, models.GaugeType),
 			},
 		},
 	}

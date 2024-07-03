@@ -20,9 +20,9 @@ func TestHandler_getMainPage(t *testing.T) {
 		method string
 	}
 	type want struct {
-		expectedStatusCode   int
 		expectedHeaders      map[string]string
 		expectedResponseBody string
+		expectedStatusCode   int
 	}
 	tests := []struct {
 		name         string

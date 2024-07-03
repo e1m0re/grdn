@@ -28,3 +28,6 @@ run-server-db:
 
 doc:
 	godoc -http=:8081 -goroot="/Users/elmore/go/src/grdn/"
+
+statickcheck:
+	go run cmd/staticlint/main.go ./...

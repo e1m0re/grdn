@@ -9,14 +9,14 @@ import (
 
 type Config struct {
 	FileStoragePath string
-	LogLevel        slog.Level
 	LoggerLevel     string
-	RestoreData     bool
 	ServerAddr      string
-	StoreInternal   time.Duration
-	VerboseMode     bool
 	DatabaseDSN     string
 	Key             string
+	StoreInternal   time.Duration
+	LogLevel        slog.Level
+	RestoreData     bool
+	VerboseMode     bool
 }
 
 func InitConfig() *Config {

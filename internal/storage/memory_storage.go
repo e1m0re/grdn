@@ -19,11 +19,11 @@ type metrics struct {
 }
 
 type MemStorage struct {
-	mx       sync.RWMutex
 	gauges   map[GaugeName]GaugeDateType
 	counters map[CounterName]CounterDateType
-	syncMode bool
 	filePath string
+	syncMode bool
+	mx       sync.RWMutex
 }
 
 func NewMemStorage(syncMode bool, filePath string) *MemStorage {
@@ -122,15 +122,15 @@ func (s *MemStorage) LoadStorageFromFile() error {
 		return err
 	}
 
-	metrics := metrics{
+	m := metrics{
 		Gauges:   make(map[GaugeName]GaugeDateType),
 		Counters: make(map[CounterName]CounterDateType),
 	}
-	err = json.Unmarshal(file, &metrics)
+	err = json.Unmarshal(file, &m)
 
 	if err == nil {
-		s.gauges = metrics.Gauges
-		s.counters = metrics.Counters
+		s.gauges = m.Gauges
+		s.counters = m.Counters
 	}
 
 	return err

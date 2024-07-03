@@ -1,3 +1,4 @@
+// Package models contains common application models.
 package models
 
 import (
@@ -13,10 +14,10 @@ const (
 )
 
 type Metric struct {
-	ID    string      `json:"id" db:"name"`
-	MType MetricsType `json:"type" db:"type"`
-	Delta *int64      `json:"delta,omitempty" db:"delta"`
 	Value *float64    `json:"value,omitempty" db:"value"`
+	Delta *int64      `json:"delta,omitempty" db:"delta"`
+	MType MetricsType `json:"type" db:"type"`
+	ID    string      `json:"id" db:"name"`
 }
 
 func (m *Metric) ValueToString() string {

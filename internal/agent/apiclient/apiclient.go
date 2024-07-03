@@ -1,3 +1,4 @@
+// Package apiclient implements methods of http requests execution.
 package apiclient
 
 import (

@@ -1,3 +1,4 @@
+// Package monitor implements business logic of clients application.
 package monitor
 
 import (
@@ -20,8 +21,8 @@ type MetricsState struct {
 }
 
 type MetricsMonitor struct {
-	mx   sync.RWMutex
 	data MetricsState
+	mx   sync.RWMutex
 }
 
 func NewMetricsMonitor() *MetricsMonitor {

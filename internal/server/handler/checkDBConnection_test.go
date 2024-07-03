@@ -20,8 +20,8 @@ func TestHandler_checkDBConnection(t *testing.T) {
 		method string
 	}
 	type want struct {
-		expectedStatusCode   int
 		expectedResponseBody string
+		expectedStatusCode   int
 	}
 	tests := []struct {
 		name         string

@@ -1,3 +1,4 @@
+// Package migrations contains migrations for data base.
 package migrations
 
 import "embed"

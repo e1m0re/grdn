@@ -1,3 +1,4 @@
+// Package app implements initialize and start clients application.
 package app
 
 import (
@@ -11,6 +12,7 @@ import (
 	"github.com/e1m0re/grdn/internal/agent/apiclient"
 	"github.com/e1m0re/grdn/internal/agent/config"
 	"github.com/e1m0re/grdn/internal/agent/monitor"
+	"github.com/e1m0re/grdn/internal/utils"
 )
 
 type content = []byte
@@ -73,12 +75,12 @@ func (app *App) Start(ctx context.Context) error {
 			for {
 				select {
 				case <-ctx.Done():
-				case content, ok := <-tasksQueue:
+				case c, ok := <-tasksQueue:
 					if !ok {
 						return nil
 					}
-					err := retryFunc(ctx, func() error {
-						return app.apiClient.SendMetricsData(&content)
+					err := utils.RetryFunc(ctx, func() error {
+						return app.apiClient.SendMetricsData(&c)
 					})
 
 					if err != nil {
