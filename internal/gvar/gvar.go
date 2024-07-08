@@ -8,8 +8,15 @@ var (
 	BuildCommit  = "N/A"
 )
 
+func prepareWelcome() string {
+	return fmt.Sprintf(
+		"Build version: %s\nBuild date: %s\nBuild commit: %s",
+		BuildVersion,
+		BuildDate,
+		BuildCommit,
+	)
+}
+
 func PrintWelcome() {
-	fmt.Printf("Build version: %s\n", BuildVersion)
-	fmt.Printf("Build date: %s\n", BuildDate)
-	fmt.Printf("Build commit: %s\n", BuildCommit)
+	fmt.Println(prepareWelcome())
 }
