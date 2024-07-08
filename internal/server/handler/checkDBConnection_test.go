@@ -32,10 +32,10 @@ func TestHandler_checkDBConnection(t *testing.T) {
 		{
 			name: "Invalid method",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricsService(t)
+				mockStorageService := mockservice.NewStorageService(t)
 
 				return &service.Services{
-					MetricsService: mockMetricService,
+					StorageService: mockStorageService,
 				}
 			},
 			args: args{
@@ -54,13 +54,13 @@ func TestHandler_checkDBConnection(t *testing.T) {
 				method: http.MethodGet,
 			},
 			mockServices: func() *service.Services {
-				mockMetricsService := mockservice.NewMetricsService(t)
-				mockMetricsService.
+				mockStorageService := mockservice.NewStorageService(t)
+				mockStorageService.
 					On("PingDB", mock.Anything).
 					Return(fmt.Errorf("something wrong"))
 
 				return &service.Services{
-					MetricsService: mockMetricsService,
+					StorageService: mockStorageService,
 				}
 			},
 			want: want{
@@ -75,13 +75,13 @@ func TestHandler_checkDBConnection(t *testing.T) {
 				method: http.MethodGet,
 			},
 			mockServices: func() *service.Services {
-				mockMetricsService := mockservice.NewMetricsService(t)
-				mockMetricsService.
+				mockStorageService := mockservice.NewStorageService(t)
+				mockStorageService.
 					On("PingDB", mock.Anything).
 					Return(nil)
 
 				return &service.Services{
-					MetricsService: mockMetricsService,
+					StorageService: mockStorageService,
 				}
 			},
 			want: want{
