@@ -9,7 +9,7 @@ import (
 	"net/http"
 
 	"github.com/e1m0re/grdn/internal/models"
-	"github.com/e1m0re/grdn/internal/storage"
+	"github.com/e1m0re/grdn/internal/server/storage"
 )
 
 func (h *Handler) getMetricValueV2(response http.ResponseWriter, request *http.Request) {

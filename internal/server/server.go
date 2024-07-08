@@ -12,11 +12,11 @@ import (
 	"github.com/pressly/goose/v3"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/e1m0re/grdn/internal/db/migrations"
 	"github.com/e1m0re/grdn/internal/server/config"
+	"github.com/e1m0re/grdn/internal/server/db/migrations"
 	appHandler "github.com/e1m0re/grdn/internal/server/handler"
-	"github.com/e1m0re/grdn/internal/service"
-	"github.com/e1m0re/grdn/internal/storage"
+	"github.com/e1m0re/grdn/internal/server/service"
+	"github.com/e1m0re/grdn/internal/server/storage"
 	"github.com/e1m0re/grdn/internal/utils"
 )
 

@@ -12,12 +12,11 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 
 	"github.com/e1m0re/grdn/internal/models"
-	"github.com/e1m0re/grdn/internal/storage"
 )
 
 type MetricsState struct {
-	Gauges   map[storage.GaugeName]storage.GaugeDateType
-	Counters map[storage.CounterName]storage.CounterDateType
+	Gauges   map[models.GaugeName]models.GaugeDateType
+	Counters map[models.CounterName]models.CounterDateType
 }
 
 type MetricsMonitor struct {
@@ -28,8 +27,8 @@ type MetricsMonitor struct {
 func NewMetricsMonitor() *MetricsMonitor {
 	return &MetricsMonitor{
 		data: MetricsState{
-			Gauges:   make(map[storage.GaugeName]storage.GaugeDateType),
-			Counters: make(map[storage.CounterName]storage.CounterDateType),
+			Gauges:   make(map[models.GaugeName]models.GaugeDateType),
+			Counters: make(map[models.CounterName]models.CounterDateType),
 		},
 	}
 }
@@ -38,42 +37,42 @@ func (m *MetricsMonitor) UpdateData() {
 	m.mx.Lock()
 	defer m.mx.Unlock()
 
-	m.data.Counters[storage.PollCount]++
+	m.data.Counters[models.PollCount]++
 
-	r := rand.New(rand.NewSource(m.data.Counters[storage.PollCount]))
-	m.data.Gauges[storage.RandomValue] = r.Float64()
+	r := rand.New(rand.NewSource(m.data.Counters[models.PollCount]))
+	m.data.Gauges[models.RandomValue] = r.Float64()
 
 	// memory metrics
 	var rtm runtime.MemStats
 
 	runtime.ReadMemStats(&rtm)
-	m.data.Gauges[storage.Alloc] = storage.GaugeDateType(rtm.Alloc)
-	m.data.Gauges[storage.BuckHashSys] = storage.GaugeDateType(rtm.BuckHashSys)
-	m.data.Gauges[storage.Frees] = storage.GaugeDateType(rtm.Frees)
-	m.data.Gauges[storage.GCCPUFraction] = rtm.GCCPUFraction
-	m.data.Gauges[storage.GCSys] = storage.GaugeDateType(rtm.GCSys)
-	m.data.Gauges[storage.HeapAlloc] = storage.GaugeDateType(rtm.HeapAlloc)
-	m.data.Gauges[storage.HeapIdle] = storage.GaugeDateType(rtm.HeapIdle)
-	m.data.Gauges[storage.HeapInuse] = storage.GaugeDateType(rtm.HeapInuse)
-	m.data.Gauges[storage.HeapObjects] = storage.GaugeDateType(rtm.HeapObjects)
-	m.data.Gauges[storage.HeapReleased] = storage.GaugeDateType(rtm.HeapReleased)
-	m.data.Gauges[storage.HeapSys] = storage.GaugeDateType(rtm.HeapSys)
-	m.data.Gauges[storage.LastGC] = storage.GaugeDateType(rtm.LastGC)
-	m.data.Gauges[storage.Lookups] = storage.GaugeDateType(rtm.Lookups)
-	m.data.Gauges[storage.MCacheInuse] = storage.GaugeDateType(rtm.MCacheInuse)
-	m.data.Gauges[storage.MCacheSys] = storage.GaugeDateType(rtm.MCacheSys)
-	m.data.Gauges[storage.MSpanInuse] = storage.GaugeDateType(rtm.MSpanInuse)
-	m.data.Gauges[storage.MSpanSys] = storage.GaugeDateType(rtm.MSpanSys)
-	m.data.Gauges[storage.Mallocs] = storage.GaugeDateType(rtm.Mallocs)
-	m.data.Gauges[storage.NextGC] = storage.GaugeDateType(rtm.NextGC)
-	m.data.Gauges[storage.NumForcedGC] = storage.GaugeDateType(rtm.NumForcedGC)
-	m.data.Gauges[storage.NumGC] = storage.GaugeDateType(rtm.NumGC)
-	m.data.Gauges[storage.OtherSys] = storage.GaugeDateType(rtm.OtherSys)
-	m.data.Gauges[storage.StackInuse] = storage.GaugeDateType(rtm.StackInuse)
-	m.data.Gauges[storage.StackSys] = storage.GaugeDateType(rtm.StackSys)
-	m.data.Gauges[storage.PauseTotalNs] = storage.GaugeDateType(rtm.PauseTotalNs)
-	m.data.Gauges[storage.Sys] = storage.GaugeDateType(rtm.Sys)
-	m.data.Gauges[storage.TotalAlloc] = storage.GaugeDateType(rtm.TotalAlloc)
+	m.data.Gauges[models.Alloc] = models.GaugeDateType(rtm.Alloc)
+	m.data.Gauges[models.BuckHashSys] = models.GaugeDateType(rtm.BuckHashSys)
+	m.data.Gauges[models.Frees] = models.GaugeDateType(rtm.Frees)
+	m.data.Gauges[models.GCCPUFraction] = rtm.GCCPUFraction
+	m.data.Gauges[models.GCSys] = models.GaugeDateType(rtm.GCSys)
+	m.data.Gauges[models.HeapAlloc] = models.GaugeDateType(rtm.HeapAlloc)
+	m.data.Gauges[models.HeapIdle] = models.GaugeDateType(rtm.HeapIdle)
+	m.data.Gauges[models.HeapInuse] = models.GaugeDateType(rtm.HeapInuse)
+	m.data.Gauges[models.HeapObjects] = models.GaugeDateType(rtm.HeapObjects)
+	m.data.Gauges[models.HeapReleased] = models.GaugeDateType(rtm.HeapReleased)
+	m.data.Gauges[models.HeapSys] = models.GaugeDateType(rtm.HeapSys)
+	m.data.Gauges[models.LastGC] = models.GaugeDateType(rtm.LastGC)
+	m.data.Gauges[models.Lookups] = models.GaugeDateType(rtm.Lookups)
+	m.data.Gauges[models.MCacheInuse] = models.GaugeDateType(rtm.MCacheInuse)
+	m.data.Gauges[models.MCacheSys] = models.GaugeDateType(rtm.MCacheSys)
+	m.data.Gauges[models.MSpanInuse] = models.GaugeDateType(rtm.MSpanInuse)
+	m.data.Gauges[models.MSpanSys] = models.GaugeDateType(rtm.MSpanSys)
+	m.data.Gauges[models.Mallocs] = models.GaugeDateType(rtm.Mallocs)
+	m.data.Gauges[models.NextGC] = models.GaugeDateType(rtm.NextGC)
+	m.data.Gauges[models.NumForcedGC] = models.GaugeDateType(rtm.NumForcedGC)
+	m.data.Gauges[models.NumGC] = models.GaugeDateType(rtm.NumGC)
+	m.data.Gauges[models.OtherSys] = models.GaugeDateType(rtm.OtherSys)
+	m.data.Gauges[models.StackInuse] = models.GaugeDateType(rtm.StackInuse)
+	m.data.Gauges[models.StackSys] = models.GaugeDateType(rtm.StackSys)
+	m.data.Gauges[models.PauseTotalNs] = models.GaugeDateType(rtm.PauseTotalNs)
+	m.data.Gauges[models.Sys] = models.GaugeDateType(rtm.Sys)
+	m.data.Gauges[models.TotalAlloc] = models.GaugeDateType(rtm.TotalAlloc)
 }
 
 func (m *MetricsMonitor) UpdateGOPS(ctx context.Context) {
@@ -82,8 +81,8 @@ func (m *MetricsMonitor) UpdateGOPS(ctx context.Context) {
 
 	memoryInfo, _ := mem.VirtualMemoryWithContext(ctx)
 
-	m.data.Gauges["TotalMemory"] = storage.GaugeDateType(memoryInfo.Total)
-	m.data.Gauges["FreeMemory"] = storage.GaugeDateType(memoryInfo.Free)
+	m.data.Gauges["TotalMemory"] = models.GaugeDateType(memoryInfo.Total)
+	m.data.Gauges["FreeMemory"] = models.GaugeDateType(memoryInfo.Free)
 
 	percents, err := cpu.PercentWithContext(ctx, 0, true)
 	if err != nil {

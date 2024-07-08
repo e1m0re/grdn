@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/e1m0re/grdn/internal/models"
-	"github.com/e1m0re/grdn/internal/service"
-	mockservice "github.com/e1m0re/grdn/internal/service/mocks"
-	"github.com/e1m0re/grdn/internal/storage"
+	"github.com/e1m0re/grdn/internal/server/service"
+	mockservice "github.com/e1m0re/grdn/internal/server/service/mocks"
+	"github.com/e1m0re/grdn/internal/server/storage"
 )
 
 func TestHandler_getMetricValue(t *testing.T) {

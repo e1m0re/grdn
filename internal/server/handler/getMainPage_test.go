@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/e1m0re/grdn/internal/service"
-	mockservice "github.com/e1m0re/grdn/internal/service/mocks"
+	"github.com/e1m0re/grdn/internal/server/service"
+	mockservice "github.com/e1m0re/grdn/internal/server/service/mocks"
 )
 
 func TestHandler_getMainPage(t *testing.T) {

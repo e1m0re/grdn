@@ -14,13 +14,13 @@ import (
 )
 
 type metrics struct {
-	Gauges   map[GaugeName]GaugeDateType     `json:"gauges"`
-	Counters map[CounterName]CounterDateType `json:"counters"`
+	Gauges   map[models.GaugeName]models.GaugeDateType     `json:"gauges"`
+	Counters map[models.CounterName]models.CounterDateType `json:"counters"`
 }
 
 type MemStorage struct {
-	gauges   map[GaugeName]GaugeDateType
-	counters map[CounterName]CounterDateType
+	gauges   map[models.GaugeName]models.GaugeDateType
+	counters map[models.CounterName]models.CounterDateType
 	filePath string
 	syncMode bool
 	mx       sync.RWMutex
@@ -28,8 +28,8 @@ type MemStorage struct {
 
 func NewMemStorage(syncMode bool, filePath string) *MemStorage {
 	return &MemStorage{
-		gauges:   make(map[GaugeName]GaugeDateType),
-		counters: make(map[CounterName]CounterDateType),
+		gauges:   make(map[models.GaugeName]models.GaugeDateType),
+		counters: make(map[models.CounterName]models.CounterDateType),
 		syncMode: syncMode,
 		filePath: filePath,
 	}
@@ -123,8 +123,8 @@ func (s *MemStorage) LoadStorageFromFile() error {
 	}
 
 	m := metrics{
-		Gauges:   make(map[GaugeName]GaugeDateType),
-		Counters: make(map[CounterName]CounterDateType),
+		Gauges:   make(map[models.GaugeName]models.GaugeDateType),
+		Counters: make(map[models.CounterName]models.CounterDateType),
 	}
 	err = json.Unmarshal(file, &m)
 

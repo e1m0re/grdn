@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/e1m0re/grdn/internal/models"
-	"github.com/e1m0re/grdn/internal/storage"
+	"github.com/e1m0re/grdn/internal/server/storage"
 )
 
 //go:generate go run github.com/vektra/mockery/v2@v2.43.1 --name=MetricsService

@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/e1m0re/grdn/internal/storage"
+	"github.com/e1m0re/grdn/internal/server/storage"
 )
 
 func (h *Handler) getMetricValue(response http.ResponseWriter, request *http.Request) {
