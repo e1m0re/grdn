@@ -13,6 +13,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/e1m0re/grdn/internal/db/migrations"
+	"github.com/e1m0re/grdn/internal/server/config"
 	appHandler "github.com/e1m0re/grdn/internal/server/handler"
 	"github.com/e1m0re/grdn/internal/service"
 	"github.com/e1m0re/grdn/internal/storage"
@@ -20,12 +21,12 @@ import (
 )
 
 type Server struct {
-	cfg        *Config
+	cfg        *config.Config
 	httpServer *http.Server
 	store      storage.Store
 }
 
-func NewServer(cfg *Config) (*Server, error) {
+func NewServer(cfg *config.Config) (*Server, error) {
 	srv := &Server{
 		cfg: cfg,
 	}

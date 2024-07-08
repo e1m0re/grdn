@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/e1m0re/grdn/internal/gvar"
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,7 +13,9 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
+	"github.com/e1m0re/grdn/internal/gvar"
 	"github.com/e1m0re/grdn/internal/server"
+	"github.com/e1m0re/grdn/internal/server/config"
 )
 
 func main() {
@@ -31,7 +32,7 @@ func main() {
 		cancel()
 	}()
 
-	cfg := server.InitConfig()
+	cfg := config.InitConfig()
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel}))
 	slog.SetDefault(logger)
