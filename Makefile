@@ -21,7 +21,7 @@ build:
 	go build -o bin/server cmd/server/*.go
 
 run-server:
-	go run cmd/server/main.go
+	go run -ldflags "-X github.com/e1m0re/grdn/internal/gvar.BuildVersion=0.0.1 -X 'github.com/e1m0re/grdn/internal/gvar.BuildDate=$(date +'%Y/%m/%d %H:%M:%S')'" cmd/server/main.go
 
 run-server-db:
 	DATABASE_DSN="postgresql://grdnuser:grdnpassword@192.168.33.26:5432/grdn" go run cmd/server/main.go

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/e1m0re/grdn/internal/gvar"
 	"log/slog"
 	"net/http"
 	"os"
@@ -17,6 +18,8 @@ import (
 )
 
 func main() {
+	gvar.PrintWelcome()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
