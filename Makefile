@@ -31,3 +31,6 @@ doc:
 
 statickcheck:
 	go run cmd/staticlint/main.go ./...
+
+generate:
+	go generate ./...

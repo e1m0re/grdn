@@ -6,21 +6,21 @@ import (
 	"github.com/e1m0re/grdn/internal/models"
 )
 
-// Store is an interface that defines methods for working with storage.
+// Storage is an interface that defines methods for working with storage.
 //
-//go:generate go run github.com/vektra/mockery/v2@v2.43.1 --name=Store
-type Store interface {
+//go:generate go run github.com/vektra/mockery/v2@v2.43.1 --name=Storage
+type Storage interface {
 	// Close closes the connection to the storage.
 	Close() error
 
 	// DumpStorageToFile saves data to a file.
 	DumpStorageToFile() error
 
+	// GetMetric returns an object Metric.
+	GetMetric(ctx context.Context, mType models.MetricType, mName string) (metric *models.Metric, err error)
+
 	// GetMetricsList returns a list of metrics in the format <METRIC>:<VALUE>.
 	GetMetricsList(ctx context.Context) ([]string, error)
-
-	// GetMetric returns an object Metric.
-	GetMetric(ctx context.Context, mType models.MetricsType, mName string) (metric *models.Metric, err error)
 
 	// LoadStorageFromFile loads data from a file.
 	LoadStorageFromFile() error

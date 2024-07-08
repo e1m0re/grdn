@@ -6,15 +6,16 @@ import (
 	"strconv"
 )
 
-type MetricsType = string
+type MetricType = string
+type MetricName = string
 
 const (
-	GaugeType   = MetricsType("gauge")
-	CounterType = MetricsType("counter")
+	GaugeType   = MetricType("gauge")
+	CounterType = MetricType("counter")
 )
 
 type GaugeDateType = float64
-type GaugeName = string
+type GaugeName = MetricName
 
 const (
 	Alloc         = GaugeName("Alloc")
@@ -48,17 +49,17 @@ const (
 )
 
 type CounterDateType = int64
-type CounterName = string
+type CounterName = MetricName
 
 const (
 	PollCount = CounterName("PollCount")
 )
 
 type Metric struct {
-	Value *float64    `json:"value,omitempty" db:"value"`
-	Delta *int64      `json:"delta,omitempty" db:"delta"`
-	MType MetricsType `json:"type" db:"type"`
-	ID    string      `json:"id" db:"name"`
+	Value *float64   `json:"value,omitempty" db:"value"`
+	Delta *int64     `json:"delta,omitempty" db:"delta"`
+	MType MetricType `json:"type" db:"type"`
+	ID    MetricName `json:"id" db:"name"`
 }
 
 func (m *Metric) ValueToString() string {

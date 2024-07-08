@@ -7,18 +7,18 @@ import (
 	"github.com/e1m0re/grdn/internal/server/storage"
 )
 
-//go:generate go run github.com/vektra/mockery/v2@v2.43.1 --name=MetricsService
-type MetricsService interface {
+//go:generate go run github.com/vektra/mockery/v2@v2.43.1 --name=MetricService
+type MetricService interface {
 	// GetMetric returns an object Metric.
-	GetMetric(ctx context.Context, mType models.MetricsType, mName string) (metric *models.Metric, err error)
+	GetMetric(ctx context.Context, mType models.MetricType, mName models.MetricName) (metric *models.Metric, err error)
 
 	// GetMetricsList returns a list of metrics in the format <METRIC>:<VALUE>.
 	GetMetricsList(ctx context.Context) ([]string, error)
 
-	// UpdateMetric performs updates to the value of the specified metric in the store.
+	// UpdateMetric performs updates to the value of the specified result in the store.
 	UpdateMetric(ctx context.Context, metric models.Metric) error
 
-	// UpdateMetrics performs batch updates of metric values in the store.
+	// UpdateMetrics performs batch updates of result values in the store.
 	UpdateMetrics(ctx context.Context, metrics models.MetricsList) error
 }
 
@@ -38,13 +38,13 @@ type StorageService interface {
 }
 
 type Services struct {
-	MetricsService
+	MetricService
 	StorageService
 }
 
-func NewServices(store storage.Store) *Services {
+func NewServices(store storage.Storage) *Services {
 	return &Services{
-		MetricsService: NewMetricsService(store),
+		MetricService:  NewMetricService(store),
 		StorageService: NewStorageService(store),
 	}
 }

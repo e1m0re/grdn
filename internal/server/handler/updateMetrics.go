@@ -25,7 +25,7 @@ func (h *Handler) updateMetricsList(response http.ResponseWriter, request *http.
 	}
 
 	err = utils.RetryFunc(request.Context(), func() error {
-		return h.services.MetricsService.UpdateMetrics(request.Context(), metrics)
+		return h.services.MetricService.UpdateMetrics(request.Context(), metrics)
 	})
 	if err != nil {
 		slog.Error("update metrics error", slog.String("error", err.Error()))

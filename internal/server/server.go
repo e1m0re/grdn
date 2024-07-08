@@ -23,7 +23,7 @@ import (
 type Server struct {
 	cfg        *config.Config
 	httpServer *http.Server
-	store      storage.Store
+	store      storage.Storage
 }
 
 func NewServer(cfg *config.Config) (*Server, error) {

@@ -36,10 +36,10 @@ func TestHandler_updateMetricsList(t *testing.T) {
 		{
 			name: "Invalid method",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricsService(t)
+				mockMetricService := mockservice.NewMetricService(t)
 
 				return &service.Services{
-					MetricsService: mockMetricService,
+					MetricService: mockMetricService,
 				}
 			},
 			args: args{
@@ -56,10 +56,10 @@ func TestHandler_updateMetricsList(t *testing.T) {
 		{
 			name: "Invalid Body",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricsService(t)
+				mockMetricService := mockservice.NewMetricService(t)
 
 				return &service.Services{
-					MetricsService: mockMetricService,
+					MetricService: mockMetricService,
 				}
 			},
 			args: args{
@@ -77,13 +77,13 @@ func TestHandler_updateMetricsList(t *testing.T) {
 		{
 			name: "UpdateMetrics failed",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricsService(t)
+				mockMetricService := mockservice.NewMetricService(t)
 				mockMetricService.
 					On("UpdateMetrics", mock.Anything, mock.AnythingOfType("models.MetricsList")).
 					Return(fmt.Errorf("something wrong"))
 
 				return &service.Services{
-					MetricsService: mockMetricService,
+					MetricService: mockMetricService,
 				}
 			},
 			args: args{
@@ -101,13 +101,13 @@ func TestHandler_updateMetricsList(t *testing.T) {
 		{
 			name: "Successfully test",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricsService(t)
+				mockMetricService := mockservice.NewMetricService(t)
 				mockMetricService.
 					On("UpdateMetrics", mock.Anything, mock.AnythingOfType("models.MetricsList")).
 					Return(nil)
 
 				return &service.Services{
-					MetricsService: mockMetricService,
+					MetricService: mockMetricService,
 				}
 			},
 			args: args{

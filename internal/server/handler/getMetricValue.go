@@ -11,7 +11,7 @@ import (
 )
 
 func (h *Handler) getMetricValue(response http.ResponseWriter, request *http.Request) {
-	metric, err := h.services.MetricsService.GetMetric(request.Context(), chi.URLParam(request, "mType"), chi.URLParam(request, "mName"))
+	metric, err := h.services.MetricService.GetMetric(request.Context(), chi.URLParam(request, "mType"), chi.URLParam(request, "mName"))
 	if err != nil {
 		if errors.Is(err, storage.ErrUnknownMetric) {
 			http.Error(response, "Not found.", http.StatusNotFound)

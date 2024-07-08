@@ -26,7 +26,7 @@ func (h *Handler) getMetricValueV2(response http.ResponseWriter, request *http.R
 		return
 	}
 
-	metric, err := h.services.MetricsService.GetMetric(request.Context(), reqData.MType, reqData.ID)
+	metric, err := h.services.MetricService.GetMetric(request.Context(), reqData.MType, reqData.ID)
 	if err != nil {
 		if errors.Is(err, storage.ErrUnknownMetric) {
 			http.Error(response, "Not found.", http.StatusNotFound)

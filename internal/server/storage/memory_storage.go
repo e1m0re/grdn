@@ -78,7 +78,7 @@ func (s *MemStorage) GetMetricsList(ctx context.Context) ([]string, error) {
 
 	return result, nil
 }
-func (s *MemStorage) GetMetric(ctx context.Context, mType models.MetricsType, mName string) (metric *models.Metric, err error) {
+func (s *MemStorage) GetMetric(ctx context.Context, mType models.MetricType, mName string) (metric *models.Metric, err error) {
 	s.mx.RLock()
 	defer s.mx.RUnlock()
 

@@ -39,10 +39,10 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 		{
 			name: "Invalid method",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricsService(t)
+				mockMetricService := mockservice.NewMetricService(t)
 
 				return &service.Services{
-					MetricsService: mockMetricService,
+					MetricService: mockMetricService,
 				}
 			},
 			args: args{
@@ -58,10 +58,10 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 		{
 			name: "Invalid Body",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricsService(t)
+				mockMetricService := mockservice.NewMetricService(t)
 
 				return &service.Services{
-					MetricsService: mockMetricService,
+					MetricService: mockMetricService,
 				}
 			},
 			args: args{
@@ -77,13 +77,13 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 		{
 			name: "Unknown metric",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricsService(t)
+				mockMetricService := mockservice.NewMetricService(t)
 				mockMetricService.
 					On("GetMetric", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).
 					Return(nil, storage.ErrUnknownMetric)
 
 				return &service.Services{
-					MetricsService: mockMetricService,
+					MetricService: mockMetricService,
 				}
 			},
 			args: args{
@@ -100,13 +100,13 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 		{
 			name: "GetMetric failed",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricsService(t)
+				mockMetricService := mockservice.NewMetricService(t)
 				mockMetricService.
 					On("GetMetric", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).
 					Return(nil, fmt.Errorf("something wrong"))
 
 				return &service.Services{
-					MetricsService: mockMetricService,
+					MetricService: mockMetricService,
 				}
 			},
 			args: args{
@@ -123,7 +123,7 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 		{
 			name: "Successfully test (Counter metric)",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricsService(t)
+				mockMetricService := mockservice.NewMetricService(t)
 				mockMetricService.
 					On("GetMetric", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).
 					Return(&models.Metric{
@@ -134,7 +134,7 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 					}, nil)
 
 				return &service.Services{
-					MetricsService: mockMetricService,
+					MetricService: mockMetricService,
 				}
 			},
 			args: args{
@@ -151,7 +151,7 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 		{
 			name: "Successfully test (GaugeType metric)",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricsService(t)
+				mockMetricService := mockservice.NewMetricService(t)
 				mockMetricService.
 					On("GetMetric", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).
 					Return(&models.Metric{
@@ -162,7 +162,7 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 					}, nil)
 
 				return &service.Services{
-					MetricsService: mockMetricService,
+					MetricService: mockMetricService,
 				}
 			},
 			args: args{

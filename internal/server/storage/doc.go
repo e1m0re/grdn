@@ -1,2 +1,2 @@
-// Package storage define a Store interface for grdn.
+// Package storage define a Storage interface for grdn.
 package storage

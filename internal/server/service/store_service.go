@@ -7,10 +7,10 @@ import (
 )
 
 type storageService struct {
-	store storage.Store
+	store storage.Storage
 }
 
-func NewStorageService(store storage.Store) StorageService {
+func NewStorageService(store storage.Storage) StorageService {
 	return &storageService{
 		store: store,
 	}

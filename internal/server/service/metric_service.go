@@ -8,16 +8,16 @@ import (
 )
 
 type metricService struct {
-	store storage.Store
+	store storage.Storage
 }
 
-func NewMetricsService(store storage.Store) MetricsService {
+func NewMetricService(store storage.Storage) MetricService {
 	return &metricService{
 		store: store,
 	}
 }
 
-func (ms *metricService) GetMetric(ctx context.Context, mType models.MetricsType, mName string) (metric *models.Metric, err error) {
+func (ms *metricService) GetMetric(ctx context.Context, mType models.MetricType, mName models.MetricName) (metric *models.Metric, err error) {
 	return ms.store.GetMetric(ctx, mType, mName)
 }
 

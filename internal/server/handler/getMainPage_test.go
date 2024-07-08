@@ -33,10 +33,10 @@ func TestHandler_getMainPage(t *testing.T) {
 		{
 			name: "Invalid method",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricsService(t)
+				mockMetricService := mockservice.NewMetricService(t)
 
 				return &service.Services{
-					MetricsService: mockMetricService,
+					MetricService: mockMetricService,
 				}
 			},
 			args: args{
@@ -51,13 +51,13 @@ func TestHandler_getMainPage(t *testing.T) {
 		{
 			name: "Request failed",
 			mockServices: func() *service.Services {
-				mockMetricsService := mockservice.NewMetricsService(t)
+				mockMetricsService := mockservice.NewMetricService(t)
 				mockMetricsService.
 					On("GetMetricsList", mock.Anything).
 					Return(make([]string, 0), fmt.Errorf("something wrong"))
 
 				return &service.Services{
-					MetricsService: mockMetricsService,
+					MetricService: mockMetricsService,
 				}
 			},
 			args: args{
@@ -73,13 +73,13 @@ func TestHandler_getMainPage(t *testing.T) {
 		{
 			name: "Empty metrics list",
 			mockServices: func() *service.Services {
-				mockMetricsService := mockservice.NewMetricsService(t)
+				mockMetricsService := mockservice.NewMetricService(t)
 				mockMetricsService.
 					On("GetMetricsList", mock.Anything).
 					Return(make([]string, 0), nil)
 
 				return &service.Services{
-					MetricsService: mockMetricsService,
+					MetricService: mockMetricsService,
 				}
 			},
 			args: args{
@@ -95,13 +95,13 @@ func TestHandler_getMainPage(t *testing.T) {
 		{
 			name: "Successfult test",
 			mockServices: func() *service.Services {
-				mockMetricsService := mockservice.NewMetricsService(t)
+				mockMetricsService := mockservice.NewMetricService(t)
 				mockMetricsService.
 					On("GetMetricsList", mock.Anything).
 					Return([]string{"metric1", "metric2", "metric3"}, nil)
 
 				return &service.Services{
-					MetricsService: mockMetricsService,
+					MetricService: mockMetricsService,
 				}
 			},
 			args: args{

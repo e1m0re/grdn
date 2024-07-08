@@ -9,7 +9,7 @@ import (
 func (h *Handler) getMainPage(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "text/html")
 
-	metrics, err := h.services.MetricsService.GetMetricsList(request.Context())
+	metrics, err := h.services.MetricService.GetMetricsList(request.Context())
 	if err != nil {
 		slog.Error(err.Error())
 		response.WriteHeader(http.StatusInternalServerError)
