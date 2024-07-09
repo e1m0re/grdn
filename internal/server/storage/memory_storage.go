@@ -26,6 +26,7 @@ type MemStorage struct {
 	mx       sync.RWMutex
 }
 
+// NewMemStorage is MemStorage constructor.
 func NewMemStorage(syncMode bool, filePath string) *MemStorage {
 	return &MemStorage{
 		gauges:   make(map[models.GaugeName]models.GaugeDateType),
@@ -35,9 +36,12 @@ func NewMemStorage(syncMode bool, filePath string) *MemStorage {
 	}
 }
 
+// Close closes the connection to the storage.
 func (s *MemStorage) Close() error {
 	return nil
 }
+
+// DumpStorageToFile saves data to a file.
 func (s *MemStorage) DumpStorageToFile() error {
 	file, err := os.OpenFile(s.filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
@@ -60,24 +64,8 @@ func (s *MemStorage) DumpStorageToFile() error {
 
 	return err
 }
-func (s *MemStorage) GetMetricsList(ctx context.Context) ([]string, error) {
-	s.mx.RLock()
-	defer s.mx.RUnlock()
 
-	result := make([]string, len(s.gauges)+len(s.counters))
-	i := 0
-	for key, value := range s.gauges {
-		result[i] = fmt.Sprintf("%s: %s", key, strconv.FormatFloat(value, 'f', -1, 64))
-		i++
-	}
-
-	for key, value := range s.counters {
-		result[i] = fmt.Sprintf("%s: %v", key, value)
-		i++
-	}
-
-	return result, nil
-}
+// GetMetric returns an object Metric.
 func (s *MemStorage) GetMetric(ctx context.Context, mType models.MetricType, mName string) (metric *models.Metric, err error) {
 	s.mx.RLock()
 	defer s.mx.RUnlock()
@@ -116,6 +104,28 @@ func (s *MemStorage) GetMetric(ctx context.Context, mType models.MetricType, mNa
 
 	return
 }
+
+// GetMetricsList returns a list of metrics in the format <METRIC>:<VALUE>.
+func (s *MemStorage) GetMetricsList(ctx context.Context) ([]string, error) {
+	s.mx.RLock()
+	defer s.mx.RUnlock()
+
+	result := make([]string, len(s.gauges)+len(s.counters))
+	i := 0
+	for key, value := range s.gauges {
+		result[i] = fmt.Sprintf("%s: %s", key, strconv.FormatFloat(value, 'f', -1, 64))
+		i++
+	}
+
+	for key, value := range s.counters {
+		result[i] = fmt.Sprintf("%s: %v", key, value)
+		i++
+	}
+
+	return result, nil
+}
+
+// LoadStorageFromFile loads data from a file.
 func (s *MemStorage) LoadStorageFromFile() error {
 	file, err := os.ReadFile(s.filePath)
 	if err != nil {
@@ -135,9 +145,13 @@ func (s *MemStorage) LoadStorageFromFile() error {
 
 	return err
 }
+
+// Ping checks the connection to the storage.
 func (s *MemStorage) Ping(ctx context.Context) error {
 	return nil
 }
+
+// UpdateMetric performs updates to the value of the specified metric in the store.
 func (s *MemStorage) UpdateMetric(ctx context.Context, metric models.Metric) error {
 	switch metric.MType {
 	case models.GaugeType:
@@ -157,6 +171,8 @@ func (s *MemStorage) UpdateMetric(ctx context.Context, metric models.Metric) err
 
 	return nil
 }
+
+// UpdateMetrics performs batch updates of metric values in the store.
 func (s *MemStorage) UpdateMetrics(ctx context.Context, metrics models.MetricsList) error {
 	for _, metric := range metrics {
 		err := s.UpdateMetric(ctx, *metric)

@@ -23,14 +23,16 @@ type App struct {
 	monitor   *monitor.MetricsMonitor
 }
 
+// NewApp is App constructor.
 func NewApp(cfg *config.Config) *App {
 	return &App{
-		apiClient: apiclient.NewAPI("http://"+cfg.ServerAddr, []byte(cfg.Key)),
+		apiClient: apiclient.NewAPIClient("http://"+cfg.ServerAddr, []byte(cfg.Key)),
 		cfg:       cfg,
 		monitor:   monitor.NewMetricsMonitor(),
 	}
 }
 
+// Start runs client application.
 func (app *App) Start(ctx context.Context) error {
 	grp, ctx := errgroup.WithContext(ctx)
 

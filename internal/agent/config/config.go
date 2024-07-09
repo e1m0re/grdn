@@ -16,7 +16,8 @@ type Config struct {
 	RateLimit      int
 }
 
-func GetConfig() *Config {
+// InitConfig initializes the clients application configuration.
+func InitConfig() *Config {
 	config := Config{}
 
 	var (

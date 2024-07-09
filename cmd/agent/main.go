@@ -49,7 +49,7 @@ func main() {
 		cancel()
 	}()
 
-	cfg := config.GetConfig()
+	cfg := config.InitConfig()
 
 	app1 := app.NewApp(cfg)
 

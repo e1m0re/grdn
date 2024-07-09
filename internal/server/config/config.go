@@ -20,6 +20,7 @@ type Config struct {
 	VerboseMode     bool
 }
 
+// InitConfig initializes the server configuration.
 func InitConfig() *Config {
 	config := Config{
 		LogLevel:    slog.LevelInfo,

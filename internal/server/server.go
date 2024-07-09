@@ -26,6 +26,7 @@ type Server struct {
 	store      storage.Storage
 }
 
+// NewServer is Server constructor.
 func NewServer(cfg *config.Config) (*Server, error) {
 	srv := &Server{
 		cfg: cfg,
@@ -127,6 +128,7 @@ func (srv *Server) shutdown(ctx context.Context) error {
 	return err
 }
 
+// Start runs server.
 func (srv *Server) Start(ctx context.Context) error {
 
 	grp, ctx := errgroup.WithContext(ctx)

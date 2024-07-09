@@ -42,6 +42,7 @@ type Services struct {
 	StorageService
 }
 
+// NewServices is Services constructor.
 func NewServices(store storage.Storage) *Services {
 	return &Services{
 		MetricService:  NewMetricService(store),

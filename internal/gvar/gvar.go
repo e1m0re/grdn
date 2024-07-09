@@ -17,6 +17,7 @@ func prepareWelcome() string {
 	)
 }
 
+// PrintWelcome prints to STDOUT welcome message.
 func PrintWelcome() {
 	fmt.Println(prepareWelcome())
 }

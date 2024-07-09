@@ -31,7 +31,8 @@ type APIClient struct {
 	key     []byte
 }
 
-func NewAPI(baseURL string, key []byte) *APIClient {
+// NewAPIClient is APIClient constructor.
+func NewAPIClient(baseURL string, key []byte) *APIClient {
 	return &APIClient{
 		client:  &http.Client{},
 		baseURL: baseURL,
@@ -39,6 +40,7 @@ func NewAPI(baseURL string, key []byte) *APIClient {
 	}
 }
 
+// DoRequest executes HTTP request.
 func (api *APIClient) DoRequest(request *http.Request) (*http.Response, error) {
 	response, err := api.client.Do(request)
 	if err != nil {
@@ -60,6 +62,7 @@ func (api *APIClient) DoRequest(request *http.Request) (*http.Response, error) {
 	return response, request.Context().Err()
 }
 
+// SendMetricsData sends metrics data to server.
 func (api *APIClient) SendMetricsData(data *[]byte) error {
 	rawData := *data
 	cBody, err := compressBody(data)

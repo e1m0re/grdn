@@ -24,6 +24,7 @@ type MetricsMonitor struct {
 	mx   sync.RWMutex
 }
 
+// NewMetricsMonitor is MetricsMonitor constructor.
 func NewMetricsMonitor() *MetricsMonitor {
 	return &MetricsMonitor{
 		data: MetricsState{
@@ -33,6 +34,7 @@ func NewMetricsMonitor() *MetricsMonitor {
 	}
 }
 
+// UpdateData collects main metrics data and updates local state.
 func (m *MetricsMonitor) UpdateData() {
 	m.mx.Lock()
 	defer m.mx.Unlock()
@@ -75,6 +77,7 @@ func (m *MetricsMonitor) UpdateData() {
 	m.data.Gauges[models.TotalAlloc] = models.GaugeDateType(rtm.TotalAlloc)
 }
 
+// UpdateGOPS collects add metrics data and updates local state.
 func (m *MetricsMonitor) UpdateGOPS(ctx context.Context) {
 	m.mx.Lock()
 	defer m.mx.Unlock()
@@ -94,6 +97,7 @@ func (m *MetricsMonitor) UpdateGOPS(ctx context.Context) {
 	}
 }
 
+// GetMetricsList returns all metrics.
 func (m *MetricsMonitor) GetMetricsList() models.MetricsList {
 	m.mx.RLock()
 	defer m.mx.RUnlock()
