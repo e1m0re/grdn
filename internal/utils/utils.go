@@ -3,6 +3,8 @@ package utils
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"time"
 
 	"github.com/avast/retry-go"
@@ -16,4 +18,10 @@ func RetryFunc(ctx context.Context, retryableFunc retry.RetryableFunc) error {
 		retry.Delay(2*time.Second),
 		retry.Context(ctx),
 	)
+}
+
+// GetMD5Hash returns md5-sum of string.
+func GetMD5Hash(text string) string {
+	hash := md5.Sum([]byte(text))
+	return hex.EncodeToString(hash[:])
 }

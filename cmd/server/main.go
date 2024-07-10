@@ -16,6 +16,8 @@ import (
 	"github.com/e1m0re/grdn/internal/gvar"
 	"github.com/e1m0re/grdn/internal/server"
 	"github.com/e1m0re/grdn/internal/server/config"
+	"github.com/e1m0re/grdn/internal/server/storage"
+	"github.com/e1m0re/grdn/internal/server/storage/store"
 )
 
 func main() {
@@ -37,12 +39,10 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel}))
 	slog.SetDefault(logger)
 
-	srv, err := server.NewServer(cfg)
-	if err != nil {
-		slog.Error(err.Error())
-	}
+	initializeStore(ctx, cfg)
 
-	err = srv.Start(ctx)
+	srv := server.NewServer(cfg)
+	err := srv.Start(ctx)
 	if err != nil {
 		if errors.Is(err, http.ErrServerClosed) {
 			slog.Info(err.Error())
@@ -53,5 +53,19 @@ func main() {
 			slog.String("error", fmt.Sprintf("%v", err)),
 			slog.String("stack", string(debug.Stack())),
 		)
+	}
+}
+
+func initializeStore(ctx context.Context, cfg *config.Config) {
+	storeType := storage.TypeMemory
+	if len(cfg.DatabaseDSN) > 0 {
+		storeType = storage.TypePostgres
+	}
+	err := store.Initialize(&storage.Config{
+		Path: cfg.DatabaseDSN,
+		Type: storeType,
+	})
+	if err != nil {
+		panic(err)
 	}
 }

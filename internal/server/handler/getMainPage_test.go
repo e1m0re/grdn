@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/e1m0re/grdn/internal/server/service"
-	mockservice "github.com/e1m0re/grdn/internal/server/service/mocks"
+	"github.com/e1m0re/grdn/internal/server/service/metrics/mocks"
 )
 
 func TestHandler_getMainPage(t *testing.T) {
@@ -33,10 +33,10 @@ func TestHandler_getMainPage(t *testing.T) {
 		{
 			name: "Invalid method",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricService(t)
+				mockMetricsManager := mocks.NewManager(t)
 
 				return &service.Services{
-					MetricService: mockMetricService,
+					MetricsManager: mockMetricsManager,
 				}
 			},
 			args: args{
@@ -51,13 +51,13 @@ func TestHandler_getMainPage(t *testing.T) {
 		{
 			name: "Request failed",
 			mockServices: func() *service.Services {
-				mockMetricsService := mockservice.NewMetricService(t)
-				mockMetricsService.
+				mockMetricsManager := mocks.NewManager(t)
+				mockMetricsManager.
 					On("GetMetricsList", mock.Anything).
 					Return(make([]string, 0), fmt.Errorf("something wrong"))
 
 				return &service.Services{
-					MetricService: mockMetricsService,
+					MetricsManager: mockMetricsManager,
 				}
 			},
 			args: args{
@@ -73,13 +73,13 @@ func TestHandler_getMainPage(t *testing.T) {
 		{
 			name: "Empty metrics list",
 			mockServices: func() *service.Services {
-				mockMetricsService := mockservice.NewMetricService(t)
-				mockMetricsService.
+				mockMetricsManager := mocks.NewManager(t)
+				mockMetricsManager.
 					On("GetMetricsList", mock.Anything).
 					Return(make([]string, 0), nil)
 
 				return &service.Services{
-					MetricService: mockMetricsService,
+					MetricsManager: mockMetricsManager,
 				}
 			},
 			args: args{
@@ -95,13 +95,13 @@ func TestHandler_getMainPage(t *testing.T) {
 		{
 			name: "Successfult test",
 			mockServices: func() *service.Services {
-				mockMetricsService := mockservice.NewMetricService(t)
-				mockMetricsService.
+				mockMetricsManager := mocks.NewManager(t)
+				mockMetricsManager.
 					On("GetMetricsList", mock.Anything).
 					Return([]string{"metric1", "metric2", "metric3"}, nil)
 
 				return &service.Services{
-					MetricService: mockMetricsService,
+					MetricsManager: mockMetricsManager,
 				}
 			},
 			args: args{

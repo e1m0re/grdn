@@ -12,7 +12,7 @@ import (
 
 	"github.com/e1m0re/grdn/internal/models"
 	"github.com/e1m0re/grdn/internal/server/service"
-	mockservice "github.com/e1m0re/grdn/internal/server/service/mocks"
+	"github.com/e1m0re/grdn/internal/server/service/metrics/mocks"
 )
 
 func TestHandler_updateMetric(t *testing.T) {
@@ -36,10 +36,10 @@ func TestHandler_updateMetric(t *testing.T) {
 		{
 			name: "Invalid method",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricService(t)
+				mockMetricsManager := mocks.NewManager(t)
 
 				return &service.Services{
-					MetricService: mockMetricService,
+					MetricsManager: mockMetricsManager,
 				}
 			},
 			args: args{
@@ -56,13 +56,13 @@ func TestHandler_updateMetric(t *testing.T) {
 		{
 			name: "UpdateMetric failed",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricService(t)
-				mockMetricService.
+				mockMetricsManager := mocks.NewManager(t)
+				mockMetricsManager.
 					On("UpdateMetric", mock.Anything, mock.AnythingOfType("models.Metric")).
 					Return(fmt.Errorf("something wrong"))
 
 				return &service.Services{
-					MetricService: mockMetricService,
+					MetricsManager: mockMetricsManager,
 				}
 			},
 			args: args{
@@ -79,13 +79,13 @@ func TestHandler_updateMetric(t *testing.T) {
 		{
 			name: "Successfully test",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricService(t)
-				mockMetricService.
+				mockMetricsManager := mocks.NewManager(t)
+				mockMetricsManager.
 					On("UpdateMetric", mock.Anything, mock.AnythingOfType("models.Metric")).
 					Return(nil)
 
 				return &service.Services{
-					MetricService: mockMetricService,
+					MetricsManager: mockMetricsManager,
 				}
 			},
 			args: args{

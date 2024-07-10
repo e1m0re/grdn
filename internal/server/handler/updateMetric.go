@@ -23,8 +23,9 @@ func (h *Handler) updateMetric(response http.ResponseWriter, request *http.Reque
 	}
 
 	err = utils.RetryFunc(request.Context(), func() error {
-		return h.services.MetricService.UpdateMetric(request.Context(), metric)
+		return h.services.MetricsManager.UpdateMetric(request.Context(), metric)
 	})
+
 	if err != nil {
 		slog.Error(err.Error())
 		response.WriteHeader(http.StatusBadRequest)
