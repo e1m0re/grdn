@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"fmt"
-	"github.com/e1m0re/grdn/internal/server/service/metrics/mocks"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/e1m0re/grdn/internal/models"
 	"github.com/e1m0re/grdn/internal/server/service"
+	"github.com/e1m0re/grdn/internal/server/service/metrics/mocks"
 	"github.com/e1m0re/grdn/internal/server/storage"
 )
 

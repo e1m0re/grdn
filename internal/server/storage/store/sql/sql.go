@@ -74,23 +74,23 @@ func (s *Store) Close() error {
 
 // GetAllMetrics returns the list of all metrics.
 func (s *Store) GetAllMetrics(ctx context.Context) (*models.MetricsList, error) {
-	var metrics *models.MetricsList
-	err := s.db.SelectContext(ctx, metrics, "SELECT name, type, delta, value FROM metrics")
+	var metrics models.MetricsList
+	err := s.db.SelectContext(ctx, &metrics, "SELECT name, type, delta, value FROM metrics")
 
-	return metrics, err
+	return &metrics, err
 }
 
 // GetMetric returns an object Metric.
 func (s *Store) GetMetric(ctx context.Context, mType models.MetricType, mName string) (*models.Metric, error) {
-	var metric *models.Metric
-	err := s.db.GetContext(ctx, metric, `SELECT name, type, delta, value FROM metrics WHERE name = $1 AND type = $2`, mName, mType)
+	var metric models.Metric
+	err := s.db.GetContext(ctx, &metric, `SELECT name, type, delta, value FROM metrics WHERE name = $1 AND type = $2`, mName, mType)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		return nil, storage.ErrUnknownMetric
 	case err != nil:
 		return nil, err
 	default:
-		return metric, err
+		return &metric, err
 	}
 }
 

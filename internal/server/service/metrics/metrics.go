@@ -52,8 +52,8 @@ func (mm *metricsManager) GetSimpleMetricsList(ctx context.Context) ([]string, e
 	}
 
 	result := make([]string, len(*metricsList))
-	for _, metric := range *metricsList {
-		result = append(result, metric.String())
+	for i, metric := range *metricsList {
+		result[i] = metric.String()
 	}
 	return result, nil
 }
