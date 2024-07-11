@@ -43,6 +43,9 @@ var (
 	store Store
 
 	initialized = false
+
+	ctx        context.Context
+	cancelFunc context.CancelFunc
 )
 
 // Get returns link to store.
@@ -61,6 +64,13 @@ func Get() Store {
 func Initialize(cfg *storage.Config) error {
 	initialized = true
 	var err error
+
+	if cancelFunc != nil {
+		// Stop the active autoSave task, if there's already one
+		cancelFunc()
+	}
+	ctx, cancelFunc = context.WithCancel(context.Background())
+
 	switch cfg.Type {
 	case storage.TypePostgres:
 		store, err = sql.NewStore(cfg.Path)
@@ -68,6 +78,7 @@ func Initialize(cfg *storage.Config) error {
 		fallthrough
 	default:
 		store, _ = memory.NewStore(context.Background(), cfg.Path, cfg.SyncMode)
+		autoSave(ctx, store, cfg.Interval)
 	}
 
 	return err
@@ -86,7 +97,7 @@ func autoSave(ctx context.Context, store Store, interval time.Duration) {
 				return store.Save(ctx)
 			})
 			if err != nil {
-				slog.Info("[store.autoSave] Save failed:", err.Error())
+				slog.Info("[store.autoSave] Save failed:", "error", err.Error())
 			}
 		}
 	}

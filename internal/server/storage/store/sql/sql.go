@@ -21,9 +21,8 @@ var (
 
 // Store that leverages a database.
 type Store struct {
+	db   *sqlx.DB
 	path string
-
-	db *sqlx.DB
 }
 
 // NewStore initializes the database and creates the schema if it doesn't already exist in the path specified.
@@ -36,7 +35,7 @@ func NewStore(path string) (*Store, error) {
 	if store.db, err = sqlx.Open("pgx", path); err != nil {
 		return nil, err
 	}
-	if err := store.db.Ping(); err != nil {
+	if err = store.db.Ping(); err != nil {
 		return nil, err
 	}
 	if err = store.migrate(); err != nil {

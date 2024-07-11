@@ -39,7 +39,7 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel}))
 	slog.SetDefault(logger)
 
-	initializeStore(ctx, cfg)
+	initializeStore(cfg)
 
 	srv := server.NewServer(cfg)
 	err := srv.Start(ctx)
@@ -56,14 +56,15 @@ func main() {
 	}
 }
 
-func initializeStore(ctx context.Context, cfg *config.Config) {
+func initializeStore(cfg *config.Config) {
 	storeType := storage.TypeMemory
 	if len(cfg.DatabaseDSN) > 0 {
 		storeType = storage.TypePostgres
 	}
 	err := store.Initialize(&storage.Config{
-		Path: cfg.DatabaseDSN,
-		Type: storeType,
+		Path:     cfg.DatabaseDSN,
+		Type:     storeType,
+		Interval: cfg.StoreInternal,
 	})
 	if err != nil {
 		panic(err)

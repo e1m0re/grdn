@@ -53,7 +53,7 @@ func TestHandler_getMainPage(t *testing.T) {
 			mockServices: func() *service.Services {
 				mockMetricsManager := mocks.NewManager(t)
 				mockMetricsManager.
-					On("GetMetricsList", mock.Anything).
+					On("GetSimpleMetricsList", mock.Anything).
 					Return(make([]string, 0), fmt.Errorf("something wrong"))
 
 				return &service.Services{
@@ -75,7 +75,7 @@ func TestHandler_getMainPage(t *testing.T) {
 			mockServices: func() *service.Services {
 				mockMetricsManager := mocks.NewManager(t)
 				mockMetricsManager.
-					On("GetMetricsList", mock.Anything).
+					On("GetSimpleMetricsList", mock.Anything).
 					Return(make([]string, 0), nil)
 
 				return &service.Services{
@@ -97,7 +97,7 @@ func TestHandler_getMainPage(t *testing.T) {
 			mockServices: func() *service.Services {
 				mockMetricsManager := mocks.NewManager(t)
 				mockMetricsManager.
-					On("GetMetricsList", mock.Anything).
+					On("GetSimpleMetricsList", mock.Anything).
 					Return([]string{"metric1", "metric2", "metric3"}, nil)
 
 				return &service.Services{

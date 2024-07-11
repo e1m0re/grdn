@@ -22,18 +22,16 @@ type Server struct {
 
 // NewServer is Server constructor.
 func NewServer(cfg *config.Config) *Server {
-	srv := &Server{
-		cfg: cfg,
-	}
-
 	services := service.NewServices()
 	handler := appHandler.NewHandler(services)
-	srv.httpServer = &http.Server{
-		Addr:    cfg.ServerAddr,
-		Handler: handler.NewRouter(cfg.Key),
-	}
 
-	return srv
+	return &Server{
+		cfg: cfg,
+		httpServer: &http.Server{
+			Addr:    cfg.ServerAddr,
+			Handler: handler.NewRouter(cfg.Key),
+		},
+	}
 }
 
 func (srv *Server) startHTTPServer() error {
@@ -72,7 +70,6 @@ func (srv *Server) shutdown(ctx context.Context) error {
 
 // Start runs server.
 func (srv *Server) Start(ctx context.Context) error {
-
 	grp, ctx := errgroup.WithContext(ctx)
 
 	grp.Go(func() error {
