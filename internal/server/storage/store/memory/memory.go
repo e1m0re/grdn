@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/e1m0re/grdn/internal/models"
-	"github.com/e1m0re/grdn/internal/server/storage"
 	"github.com/e1m0re/grdn/internal/utils"
 )
 
@@ -36,6 +35,16 @@ func NewStore(ctx context.Context, filePath string, syncMode bool) (*Store, erro
 	return store, err
 }
 
+func (s *Store) genMetricKey(m models.MetricName, t models.MetricType) string {
+	return utils.GetMD5Hash(t + m)
+}
+
+// Clear removes all data in storage.
+func (s *Store) Clear(ctx context.Context) error {
+	s.metrics = make(map[string]models.Metric)
+	return nil
+}
+
 // Close closes the connection to the storage.
 func (s *Store) Close() error {
 	return nil
@@ -49,7 +58,14 @@ func (s *Store) GetAllMetrics(ctx context.Context) (*models.MetricsList, error) 
 	result := make(models.MetricsList, len(s.metrics))
 	i := 0
 	for _, metric := range s.metrics {
-		result[i] = &metric
+		result[i] = &models.Metric{
+			Value: metric.Value,
+			Delta: metric.Delta,
+			MType: metric.MType,
+			ID:    metric.ID,
+		}
+
+		i++
 	}
 
 	return &result, nil
@@ -60,10 +76,10 @@ func (s *Store) GetMetric(ctx context.Context, mType models.MetricType, mName st
 	s.RWMutex.RLock()
 	defer s.RWMutex.RUnlock()
 
-	key := utils.GetMD5Hash(mType + mName)
+	key := s.genMetricKey(mName, mType)
 	metric, ok := s.metrics[key]
 	if !ok {
-		return nil, storage.ErrUnknownMetric
+		return nil, nil
 	}
 
 	return &metric, nil
@@ -115,7 +131,7 @@ func (s *Store) Save(ctx context.Context) error {
 // UpdateMetrics performs batch updates of result values in the store.
 func (s *Store) UpdateMetrics(ctx context.Context, metrics models.MetricsList) error {
 	for _, metric := range metrics {
-		key := utils.GetMD5Hash(metric.MType + metric.ID)
+		key := s.genMetricKey(metric.ID, metric.MType)
 		s.metrics[key] = *metric
 	}
 

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/e1m0re/grdn/internal/server/service/metrics/mocks"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,7 +13,7 @@ import (
 
 	"github.com/e1m0re/grdn/internal/models"
 	"github.com/e1m0re/grdn/internal/server/service"
-	"github.com/e1m0re/grdn/internal/server/storage"
+	"github.com/e1m0re/grdn/internal/server/service/metrics/mocks"
 )
 
 func TestHandler_getMetricValueV2(t *testing.T) {
@@ -80,7 +79,7 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 				mockMetricsManager := mocks.NewManager(t)
 				mockMetricsManager.
 					On("GetMetric", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).
-					Return(nil, storage.ErrUnknownMetric)
+					Return(nil, nil)
 
 				return &service.Services{
 					MetricsManager: mockMetricsManager,

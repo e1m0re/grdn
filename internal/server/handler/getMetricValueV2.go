@@ -3,13 +3,11 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 
 	"github.com/e1m0re/grdn/internal/models"
-	"github.com/e1m0re/grdn/internal/server/storage"
 )
 
 func (h *Handler) getMetricValueV2(response http.ResponseWriter, request *http.Request) {
@@ -28,13 +26,12 @@ func (h *Handler) getMetricValueV2(response http.ResponseWriter, request *http.R
 
 	metric, err := h.services.MetricsManager.GetMetric(request.Context(), reqData.MType, reqData.ID)
 	if err != nil {
-		if errors.Is(err, storage.ErrUnknownMetric) {
-			http.Error(response, "Not found.", http.StatusNotFound)
-			return
-		}
-
 		slog.Error(err.Error())
 		http.Error(response, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if metric == nil {
+		http.Error(response, "Not found.", http.StatusNotFound)
 		return
 	}
 

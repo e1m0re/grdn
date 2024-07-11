@@ -15,12 +15,12 @@ type Manager struct {
 	mock.Mock
 }
 
-// GetAll provides a mock function with given fields: ctx
-func (_m *Manager) GetAll(ctx context.Context) (*models.MetricsList, error) {
+// GetAllMetrics provides a mock function with given fields: ctx
+func (_m *Manager) GetAllMetrics(ctx context.Context) (*models.MetricsList, error) {
 	ret := _m.Called(ctx)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetAll")
+		panic("no return value specified for GetAllMetrics")
 	}
 
 	var r0 *models.MetricsList
@@ -68,36 +68,6 @@ func (_m *Manager) GetMetric(ctx context.Context, mType string, mName string) (*
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
 		r1 = rf(ctx, mType, mName)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetSimpleMetricsList provides a mock function with given fields: ctx
-func (_m *Manager) GetSimpleMetricsList(ctx context.Context) ([]string, error) {
-	ret := _m.Called(ctx)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetSimpleMetricsList")
-	}
-
-	var r0 []string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) ([]string, error)); ok {
-		return rf(ctx)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context) []string); ok {
-		r0 = rf(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]string)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
 	} else {
 		r1 = ret.Error(1)
 	}

@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"log"
 	"log/slog"
 	"time"
 
@@ -17,13 +18,16 @@ import (
 //go:generate go run github.com/vektra/mockery/v2@v2.43.1 --name=Store
 type Store interface {
 
+	// Clear removes all data in storage.
+	Clear(ctx context.Context) error
+
 	// Close closes the connection to the storage.
 	Close() error
 
 	// GetAllMetrics returns the list of all metrics.
 	GetAllMetrics(ctx context.Context) (*models.MetricsList, error)
 
-	// GetMetric returns an object Metric.
+	// GetMetric returns an object Metric. Returns nil,nil if metric not found.
 	GetMetric(ctx context.Context, mType models.MetricType, mName string) (*models.Metric, error)
 
 	// Ping checks the connection to the storage.
@@ -69,6 +73,12 @@ func Initialize(cfg *storage.Config) error {
 		// Stop the active autoSave task, if there's already one
 		cancelFunc()
 	}
+
+	if cfg == nil {
+		// This only happens in tests
+		log.Println("[store.Initialize] nil storage config passed as parameter. This should only happen in tests. Defaulting to an empty config.")
+		cfg = &storage.Config{}
+	}
 	ctx, cancelFunc = context.WithCancel(context.Background())
 
 	switch cfg.Type {
@@ -78,7 +88,7 @@ func Initialize(cfg *storage.Config) error {
 		fallthrough
 	default:
 		store, _ = memory.NewStore(context.Background(), cfg.Path, cfg.SyncMode)
-		autoSave(ctx, store, cfg.Interval)
+		go autoSave(ctx, store, cfg.Interval)
 	}
 
 	return err

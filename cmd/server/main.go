@@ -58,11 +58,13 @@ func main() {
 
 func initializeStore(cfg *config.Config) {
 	storeType := storage.TypeMemory
+	path := cfg.FileStoragePath
 	if len(cfg.DatabaseDSN) > 0 {
 		storeType = storage.TypePostgres
+		path = cfg.DatabaseDSN
 	}
 	err := store.Initialize(&storage.Config{
-		Path:     cfg.DatabaseDSN,
+		Path:     path,
 		Type:     storeType,
 		Interval: cfg.StoreInternal,
 	})

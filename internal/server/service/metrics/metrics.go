@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/e1m0re/grdn/internal/models"
+	"github.com/e1m0re/grdn/internal/server/storage"
 	"github.com/e1m0re/grdn/internal/server/storage/store"
 )
 
@@ -11,14 +12,11 @@ import (
 //
 //go:generate go run github.com/vektra/mockery/v2@v2.43.1 --name=Manager
 type Manager interface {
-	// GetAll returns list of all metrics.
-	GetAll(ctx context.Context) (*models.MetricsList, error)
+	// GetAllMetrics returns list of all metrics.
+	GetAllMetrics(ctx context.Context) (*models.MetricsList, error)
 
-	// GetMetric returns an object Metric.
+	// GetMetric returns an object Metric. Returns nil,nil if metric not found.
 	GetMetric(ctx context.Context, mType models.MetricType, mName models.MetricName) (*models.Metric, error)
-
-	// GetSimpleMetricsList returns a list of metrics in the format <METRIC>:<VALUE>.
-	GetSimpleMetricsList(ctx context.Context) ([]string, error)
 
 	// UpdateMetric performs updates to the value of the specified result in the store.
 	UpdateMetric(ctx context.Context, metric models.Metric) error
@@ -34,47 +32,76 @@ func NewMetricsManager() Manager {
 	return &metricsManager{}
 }
 
-// GetAll returns list of all metrics.
-func (mm *metricsManager) GetAll(ctx context.Context) (*models.MetricsList, error) {
+// GetAllMetrics returns list of all metrics.
+func (mm *metricsManager) GetAllMetrics(ctx context.Context) (*models.MetricsList, error) {
 	return store.Get().GetAllMetrics(ctx)
 }
 
-// GetMetric returns an object Metric.
+// GetMetric returns an object Metric. Returns nil,nil if metric not found.
 func (mm *metricsManager) GetMetric(ctx context.Context, mType models.MetricType, mName models.MetricName) (*models.Metric, error) {
 	return store.Get().GetMetric(ctx, mType, mName)
 }
 
-// GetSimpleMetricsList returns a list of metrics in the format <METRIC>:<VALUE>.
-func (mm *metricsManager) GetSimpleMetricsList(ctx context.Context) ([]string, error) {
-	metricsList, err := mm.GetAll(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]string, len(*metricsList))
-	for i, metric := range *metricsList {
-		result[i] = metric.String()
-	}
-	return result, nil
-}
-
 // UpdateMetric performs updates to the value of the specified result in the store.
 func (mm *metricsManager) UpdateMetric(ctx context.Context, metric models.Metric) error {
-	//switch metric.MType {
-	//case models.GaugeType:
-	//	s.gauges[metric.ID] = *metric.Value
-	//case models.CounterType:
-	//	s.counters[metric.ID] += *metric.Delta
-	//default:
-	//	return errors.New("unknown metric type")
-	//}
-	//
-	//return store.Get().UpdateMetric(ctx, metric)
+	cm, err := mm.GetMetric(ctx, metric.MType, metric.ID)
+	if err != nil {
+		return err
+	}
+	if cm == nil {
+		cm = &models.Metric{
+			Value: nil,
+			Delta: nil,
+			MType: metric.MType,
+			ID:    metric.ID,
+		}
+	}
 
-	return nil
+	switch cm.MType {
+	case models.GaugeType:
+		cm.Value = metric.Value
+	case models.CounterType:
+		newDelta := *cm.Delta + *metric.Delta
+		cm.Delta = &newDelta
+	default:
+		return storage.ErrUnknownMetricType
+	}
+
+	return store.Get().UpdateMetrics(ctx, models.MetricsList{cm})
 }
 
 // UpdateMetrics performs batch updates of result values in the store.
 func (mm *metricsManager) UpdateMetrics(ctx context.Context, metrics models.MetricsList) error {
+	for i, metric := range metrics {
+		cm, err := mm.GetMetric(ctx, metric.MType, metric.ID)
+		if err != nil {
+			return err
+		}
+		if cm == nil {
+			cm = &models.Metric{
+				Value: nil,
+				Delta: nil,
+				MType: metric.MType,
+				ID:    metric.ID,
+			}
+		}
+
+		switch cm.MType {
+		case models.GaugeType:
+			cm.Value = metric.Value
+		case models.CounterType:
+			if cm.Delta == nil {
+				cm.Delta = metric.Delta
+			} else {
+				newDelta := *cm.Delta + *metric.Delta
+				cm.Delta = &newDelta
+			}
+		default:
+			return storage.ErrUnknownMetricType
+		}
+
+		metrics[i] = cm
+	}
+
 	return store.Get().UpdateMetrics(ctx, metrics)
 }

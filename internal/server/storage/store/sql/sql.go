@@ -11,7 +11,6 @@ import (
 
 	"github.com/e1m0re/grdn/internal/models"
 	"github.com/e1m0re/grdn/internal/server/db/migrations"
-	"github.com/e1m0re/grdn/internal/server/storage"
 )
 
 var (
@@ -67,6 +66,12 @@ func (s *Store) migrate() error {
 	return db.Close()
 }
 
+// Clear removes all data in storage.
+func (s *Store) Clear(ctx context.Context) error {
+	_, err := s.db.ExecContext(ctx, "DELETE FROM metrics WHERE id > 0")
+	return err
+}
+
 // Close closes the connection to the storage.
 func (s *Store) Close() error {
 	return s.db.Close()
@@ -86,7 +91,7 @@ func (s *Store) GetMetric(ctx context.Context, mType models.MetricType, mName st
 	err := s.db.GetContext(ctx, &metric, `SELECT name, type, delta, value FROM metrics WHERE name = $1 AND type = $2`, mName, mType)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
-		return nil, storage.ErrUnknownMetric
+		return nil, nil
 	case err != nil:
 		return nil, err
 	default:

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
@@ -22,8 +23,10 @@ func (h *Handler) updateMetric(response http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	err = utils.RetryFunc(request.Context(), func() error {
-		return h.services.MetricsManager.UpdateMetric(request.Context(), metric)
+	ctx, cancelFunc := context.WithCancel(request.Context())
+	defer cancelFunc()
+	err = utils.RetryFunc(ctx, func() error {
+		return h.services.MetricsManager.UpdateMetric(ctx, metric)
 	})
 
 	if err != nil {
