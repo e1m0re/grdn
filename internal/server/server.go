@@ -18,11 +18,12 @@ import (
 type Server struct {
 	cfg        *config.Config
 	httpServer *http.Server
+	services   *service.Services
 }
 
 // NewServer is Server constructor.
-func NewServer(cfg *config.Config) *Server {
-	services := service.NewServices()
+func NewServer(cfg *config.Config, s store.Store) *Server {
+	services := service.NewServices(s)
 	handler := appHandler.NewHandler(services)
 
 	return &Server{
@@ -31,6 +32,7 @@ func NewServer(cfg *config.Config) *Server {
 			Addr:    cfg.ServerAddr,
 			Handler: handler.NewRouter(cfg.Key),
 		},
+		services: services,
 	}
 }
 
@@ -51,13 +53,13 @@ func (srv *Server) shutdown(ctx context.Context) error {
 		return err
 	}
 
-	err = store.Get().Save(ctx)
+	err = srv.services.StorageService.Save(ctx)
 	if err != nil {
 		slog.Error(err.Error())
 		return err
 	}
 
-	err = store.Get().Close()
+	err = srv.services.StorageService.Close()
 	if err != nil {
 		slog.Error(err.Error())
 		return err

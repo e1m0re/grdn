@@ -12,7 +12,7 @@ import (
 //
 //go:generate go run github.com/vektra/mockery/v2@v2.43.1 --name=Manager
 type Manager interface {
-	// GetAllMetrics returns list of all metrics.
+	// GetAllMetrics returns result of all metrics.
 	GetAllMetrics(ctx context.Context) (*models.MetricsList, error)
 
 	// GetMetric returns an object Metric. Returns nil,nil if metric not found.
@@ -25,26 +25,30 @@ type Manager interface {
 	UpdateMetrics(ctx context.Context, metrics models.MetricsList) error
 }
 
-type metricsManager struct{}
-
-// NewMetricsManager returns new instance of metrics manager.
-func NewMetricsManager() Manager {
-	return &metricsManager{}
+type metricsManager struct {
+	store store.Store
 }
 
-// GetAllMetrics returns list of all metrics.
+// NewMetricsManager returns new instance of metrics manager.
+func NewMetricsManager(s store.Store) Manager {
+	return &metricsManager{
+		store: s,
+	}
+}
+
+// GetAllMetrics returns result of all metrics.
 func (mm *metricsManager) GetAllMetrics(ctx context.Context) (*models.MetricsList, error) {
-	return store.Get().GetAllMetrics(ctx)
+	return mm.store.GetAllMetrics(ctx)
 }
 
 // GetMetric returns an object Metric. Returns nil,nil if metric not found.
 func (mm *metricsManager) GetMetric(ctx context.Context, mType models.MetricType, mName models.MetricName) (*models.Metric, error) {
-	return store.Get().GetMetric(ctx, mType, mName)
+	return mm.store.GetMetric(ctx, mType, mName)
 }
 
 // UpdateMetric performs updates to the value of the specified result in the store.
 func (mm *metricsManager) UpdateMetric(ctx context.Context, metric models.Metric) error {
-	cm, err := mm.GetMetric(ctx, metric.MType, metric.ID)
+	cm, err := mm.store.GetMetric(ctx, metric.MType, metric.ID)
 	if err != nil {
 		return err
 	}
@@ -67,13 +71,13 @@ func (mm *metricsManager) UpdateMetric(ctx context.Context, metric models.Metric
 		return storage.ErrUnknownMetricType
 	}
 
-	return store.Get().UpdateMetrics(ctx, models.MetricsList{cm})
+	return mm.store.UpdateMetrics(ctx, models.MetricsList{cm})
 }
 
 // UpdateMetrics performs batch updates of result values in the store.
 func (mm *metricsManager) UpdateMetrics(ctx context.Context, metrics models.MetricsList) error {
 	for i, metric := range metrics {
-		cm, err := mm.GetMetric(ctx, metric.MType, metric.ID)
+		cm, err := mm.store.GetMetric(ctx, metric.MType, metric.ID)
 		if err != nil {
 			return err
 		}
@@ -103,5 +107,5 @@ func (mm *metricsManager) UpdateMetrics(ctx context.Context, metrics models.Metr
 		metrics[i] = cm
 	}
 
-	return store.Get().UpdateMetrics(ctx, metrics)
+	return mm.store.UpdateMetrics(ctx, metrics)
 }

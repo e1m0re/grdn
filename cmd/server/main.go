@@ -39,10 +39,14 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel}))
 	slog.SetDefault(logger)
 
-	initializeStore(cfg)
+	s, err := initializeStore(ctx, cfg)
+	if err != nil {
+		slog.Error(err.Error())
+		return
+	}
 
-	srv := server.NewServer(cfg)
-	err := srv.Start(ctx)
+	srv := server.NewServer(cfg, s)
+	err = srv.Start(ctx)
 	if err != nil {
 		if errors.Is(err, http.ErrServerClosed) {
 			slog.Info(err.Error())
@@ -56,14 +60,14 @@ func main() {
 	}
 }
 
-func initializeStore(cfg *config.Config) {
+func initializeStore(ctx context.Context, cfg *config.Config) (store.Store, error) {
 	storeType := storage.TypeMemory
 	path := cfg.FileStoragePath
 	if len(cfg.DatabaseDSN) > 0 {
 		storeType = storage.TypePostgres
 		path = cfg.DatabaseDSN
 	}
-	err := store.Initialize(&storage.Config{
+	newStore, err := store.NewStore(ctx, &storage.Config{
 		Path:     path,
 		Type:     storeType,
 		Interval: cfg.StoreInternal,
@@ -71,4 +75,6 @@ func initializeStore(cfg *config.Config) {
 	if err != nil {
 		panic(err)
 	}
+
+	return newStore, err
 }

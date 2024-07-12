@@ -43,55 +43,29 @@ type Store interface {
 	UpdateMetrics(ctx context.Context, metrics models.MetricsList) error
 }
 
-var (
-	store Store
-
-	initialized = false
-
-	ctx        context.Context
-	cancelFunc context.CancelFunc
-)
-
-// Get returns link to store.
-func Get() Store {
-	if !initialized {
-		err := Initialize(nil)
-		if err != nil {
-			panic("failed auto initialization of store " + err.Error())
-		}
-	}
-
-	return store
-}
-
-// Initialize instantiates the storage provider based on the Config provider
-func Initialize(cfg *storage.Config) error {
-	initialized = true
-	var err error
-
-	if cancelFunc != nil {
-		// Stop the active autoSave task, if there's already one
-		cancelFunc()
-	}
-
+// NewStore instantiates the storage provider based on the Config provider
+func NewStore(ctx context.Context, cfg *storage.Config) (Store, error) {
 	if cfg == nil {
 		// This only happens in tests
 		log.Println("[store.Initialize] nil storage config passed as parameter. This should only happen in tests. Defaulting to an empty config.")
 		cfg = &storage.Config{}
 	}
-	ctx, cancelFunc = context.WithCancel(context.Background())
 
+	var (
+		store Store
+		err   error
+	)
 	switch cfg.Type {
 	case storage.TypePostgres:
 		store, err = sql.NewStore(cfg.Path)
 	case storage.TypeMemory:
 		fallthrough
 	default:
-		store, _ = memory.NewStore(context.Background(), cfg.Path, cfg.SyncMode)
+		store, _ = memory.NewStore(ctx, cfg.Path, cfg.SyncMode)
 		go autoSave(ctx, store, cfg.Interval)
 	}
 
-	return err
+	return store, err
 }
 
 // autoSave automatically calls the Save function of the provider at every interval
