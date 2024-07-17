@@ -14,6 +14,7 @@ type Config struct {
 	ServerAddr      string
 	DatabaseDSN     string
 	Key             string
+	PrivateKeyFile  string
 	StoreInternal   time.Duration
 	LogLevel        slog.Level
 	RestoreData     bool
@@ -34,6 +35,7 @@ func InitConfig() *Config {
 	flag.BoolVar(&config.RestoreData, "r", true, "save or don't save data to HDD on shutdown")
 	flag.StringVar(&config.DatabaseDSN, "d", "", "database connection string")
 	flag.StringVar(&config.Key, "k", "", "key to use for encryption")
+	flag.StringVar(&config.PrivateKeyFile, "crypto-key", "", "public key file path")
 	flag.Parse()
 
 	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
@@ -66,6 +68,10 @@ func InitConfig() *Config {
 
 	if envKey := os.Getenv("KEY"); envKey != "" {
 		config.Key = envKey
+	}
+
+	if envCryptoKey := os.Getenv("CRYPTO_KEY"); envCryptoKey != "" {
+		config.PrivateKeyFile = envCryptoKey
 	}
 
 	return &config

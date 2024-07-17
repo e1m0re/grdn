@@ -30,7 +30,7 @@ func NewServer(cfg *config.Config, s store.Store) *Server {
 		cfg: cfg,
 		httpServer: &http.Server{
 			Addr:    cfg.ServerAddr,
-			Handler: handler.NewRouter(cfg.Key),
+			Handler: handler.NewRouter(cfg.Key, cfg.PrivateKeyFile),
 		},
 		services: services,
 	}

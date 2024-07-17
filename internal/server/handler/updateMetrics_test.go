@@ -127,7 +127,7 @@ func TestHandler_updateMetricsList(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			services := test.mockServices()
 			handler := NewHandler(services)
-			router := handler.NewRouter("")
+			router := handler.NewRouter("", "")
 
 			req, err := http.NewRequestWithContext(test.args.ctx, test.args.method, test.args.path, bytes.NewReader([]byte(test.args.body)))
 			require.NoError(t, err)

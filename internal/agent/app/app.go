@@ -12,6 +12,7 @@ import (
 	"github.com/e1m0re/grdn/internal/agent/apiclient"
 	"github.com/e1m0re/grdn/internal/agent/config"
 	"github.com/e1m0re/grdn/internal/agent/monitor"
+	"github.com/e1m0re/grdn/internal/encryption"
 	"github.com/e1m0re/grdn/internal/utils"
 )
 
@@ -21,14 +22,25 @@ type App struct {
 	apiClient *apiclient.APIClient
 	cfg       *config.Config
 	monitor   *monitor.MetricsMonitor
+	encryptor encryption.Encryptor
 }
 
 // NewApp is App constructor.
 func NewApp(cfg *config.Config) *App {
+	var encr encryption.Encryptor
+	var err error
+	if len(cfg.PublicKeyFile) > 0 {
+		encr, err = encryption.NewEncryptor(cfg.PublicKeyFile)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	return &App{
 		apiClient: apiclient.NewAPIClient("http://"+cfg.ServerAddr, []byte(cfg.Key)),
 		cfg:       cfg,
 		monitor:   monitor.NewMetricsMonitor(),
+		encryptor: encr,
 	}
 }
 
@@ -107,6 +119,13 @@ func (app *App) sendDataToServer(ctx context.Context, outChan chan<- content) {
 			slog.String("error", err.Error()),
 		)
 		return
+	}
+
+	if app.encryptor != nil {
+		content, err = app.encryptor.Encrypt(content)
+		if err != nil {
+			slog.Error("encryption error", slog.String("error", err.Error()))
+		}
 	}
 
 	outChan <- content

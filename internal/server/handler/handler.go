@@ -22,7 +22,7 @@ func NewHandler(services *service.Services) *Handler {
 }
 
 // NewRouter initializes new router.
-func (h *Handler) NewRouter(signKey string) *chi.Mux {
+func (h *Handler) NewRouter(signKey string, privateKeyFile string) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(appMiddleware.Logging())
 	r.Use(appMiddleware.UnzipContent())
@@ -30,6 +30,9 @@ func (h *Handler) NewRouter(signKey string) *chi.Mux {
 		r.Use(appMiddleware.SignChecking(signKey))
 	}
 	r.Use(middleware.Compress(5, "text/html", "application/json"))
+	if len(privateKeyFile) > 0 {
+		r.Use(appMiddleware.DecryptContent(privateKeyFile))
+	}
 	if len(signKey) > 0 {
 		r.Use(appMiddleware.SignResponse(signKey))
 	}

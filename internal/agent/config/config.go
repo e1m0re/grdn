@@ -10,6 +10,7 @@ import (
 
 type Config struct {
 	Key            string
+	PublicKeyFile  string
 	ServerAddr     string
 	PollInterval   time.Duration
 	ReportInterval time.Duration
@@ -29,6 +30,7 @@ func InitConfig() *Config {
 	flag.UintVar(&pollInterval, "p", 2, "frequency of polling metrics from the package")
 	flag.StringVar(&config.Key, "k", "", "key to use for encryption")
 	flag.IntVar(&config.RateLimit, "l", 1, "limit of threads count")
+	flag.StringVar(&config.PublicKeyFile, "crypto-key", "", "public key file path")
 	flag.Parse()
 
 	if envServerAddr := os.Getenv("ADDRESS"); envServerAddr != "" {
@@ -63,6 +65,10 @@ func InitConfig() *Config {
 	}
 	if config.RateLimit <= 0 {
 		config.RateLimit = 1
+	}
+
+	if envCryptoKey := os.Getenv("CRYPTO_KEY"); envCryptoKey != "" {
+		config.PublicKeyFile = envCryptoKey
 	}
 
 	return &config

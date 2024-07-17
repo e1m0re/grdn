@@ -88,7 +88,7 @@ func TestHandler_checkDBConnection(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			_, services := test.mockServices()
 			handler := NewHandler(services)
-			router := handler.NewRouter("")
+			router := handler.NewRouter("", "")
 
 			req, err := http.NewRequestWithContext(test.args.ctx, test.args.method, "/ping", nil)
 			require.NoError(t, err)

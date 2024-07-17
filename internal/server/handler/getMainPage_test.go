@@ -134,7 +134,7 @@ func TestHandler_getMainPage(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			services := test.mockServices()
 			handler := NewHandler(services)
-			router := handler.NewRouter("")
+			router := handler.NewRouter("", "")
 
 			req, err := http.NewRequestWithContext(test.args.ctx, test.args.method, "/", nil)
 			require.NoError(t, err)
