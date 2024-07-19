@@ -2,6 +2,7 @@
 package config
 
 import (
+	"encoding/json"
 	"flag"
 	"log/slog"
 	"os"
@@ -9,15 +10,15 @@ import (
 )
 
 type Config struct {
-	FileStoragePath string
+	FileStoragePath string `yaml:"store_file"`
 	LoggerLevel     string
-	ServerAddr      string
-	DatabaseDSN     string
+	ServerAddr      string `yaml:"address"`
+	DatabaseDSN     string `yaml:"database_dsn"`
 	Key             string
-	PrivateKeyFile  string
-	StoreInternal   time.Duration
+	PrivateKeyFile  string        `yaml:"crypto_key"`
+	StoreInternal   time.Duration `yaml:"store_interval"`
 	LogLevel        slog.Level
-	RestoreData     bool
+	RestoreData     bool `yaml:"restore"`
 	VerboseMode     bool
 }
 
@@ -26,6 +27,18 @@ func InitConfig() *Config {
 	config := Config{
 		LogLevel:    slog.LevelInfo,
 		LoggerLevel: "info",
+	}
+
+	var configFile string
+	flag.StringVar(&configFile, "c", "", "config file (JSON)")
+	if envConfigFile := os.Getenv("CONFIG"); envConfigFile != "" {
+		configFile = envConfigFile
+	}
+	if configFile != "" {
+		err := updateConfigFromFile(&config, configFile)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	flag.StringVar(&config.ServerAddr, "a", "localhost:8080", "address and port to run server")
@@ -75,4 +88,16 @@ func InitConfig() *Config {
 	}
 
 	return &config
+}
+
+func updateConfigFromFile(c *Config, path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	decoder := json.NewDecoder(f)
+
+	return decoder.Decode(c)
 }

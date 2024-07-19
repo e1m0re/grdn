@@ -2,6 +2,7 @@
 package config
 
 import (
+	"encoding/json"
 	"flag"
 	"os"
 	"strconv"
@@ -10,10 +11,10 @@ import (
 
 type Config struct {
 	Key            string
-	PublicKeyFile  string
-	ServerAddr     string
-	PollInterval   time.Duration
-	ReportInterval time.Duration
+	PublicKeyFile  string        `yaml:"crypto_key"`
+	ServerAddr     string        `yaml:"address"`
+	PollInterval   time.Duration `yaml:"poll_interval"`
+	ReportInterval time.Duration `yaml:"report_interval"`
 	RateLimit      int
 }
 
@@ -25,6 +26,19 @@ func InitConfig() *Config {
 		pollInterval   uint
 		reportInterval uint
 	)
+
+	var configFile string
+	flag.StringVar(&configFile, "c", "", "config file (JSON)")
+	if envConfigFile := os.Getenv("CONFIG"); envConfigFile != "" {
+		configFile = envConfigFile
+	}
+	if configFile != "" {
+		err := updateConfigFromFile(&config, configFile)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	flag.StringVar(&config.ServerAddr, "a", "localhost:8080", "address and port to run server")
 	flag.UintVar(&reportInterval, "r", 10, "frequency of sending metrics to the server")
 	flag.UintVar(&pollInterval, "p", 2, "frequency of polling metrics from the package")
@@ -72,4 +86,16 @@ func InitConfig() *Config {
 	}
 
 	return &config
+}
+
+func updateConfigFromFile(c *Config, path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	decoder := json.NewDecoder(f)
+
+	return decoder.Decode(c)
 }
