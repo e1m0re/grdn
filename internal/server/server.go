@@ -6,90 +6,34 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"time"
 
-	"github.com/jackc/pgx/v5/stdlib"
-	"github.com/pressly/goose/v3"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/e1m0re/grdn/internal/db/migrations"
+	"github.com/e1m0re/grdn/internal/server/config"
 	appHandler "github.com/e1m0re/grdn/internal/server/handler"
-	"github.com/e1m0re/grdn/internal/service"
-	"github.com/e1m0re/grdn/internal/storage"
-	"github.com/e1m0re/grdn/internal/utils"
+	"github.com/e1m0re/grdn/internal/server/service"
+	"github.com/e1m0re/grdn/internal/server/storage/store"
 )
 
 type Server struct {
-	cfg        *Config
+	cfg        *config.Config
 	httpServer *http.Server
-	store      storage.Store
+	services   *service.Services
 }
 
-func NewServer(cfg *Config) (*Server, error) {
-	srv := &Server{
-		cfg: cfg,
-	}
-
-	err := srv.initStore()
-
-	services := service.NewServices(srv.store)
+// NewServer is Server constructor.
+func NewServer(cfg *config.Config, s store.Store) *Server {
+	services := service.NewServices(s)
 	handler := appHandler.NewHandler(services)
-	srv.httpServer = &http.Server{
-		Addr:    cfg.ServerAddr,
-		Handler: handler.NewRouter(cfg.Key),
+
+	return &Server{
+		cfg: cfg,
+		httpServer: &http.Server{
+			Addr:    cfg.ServerAddr,
+			Handler: handler.NewRouter(cfg.Key),
+		},
+		services: services,
 	}
-
-	return srv, err
-}
-
-func (srv *Server) initStore() error {
-	if srv.cfg.DatabaseDSN != "" {
-		err := srv.migrate()
-		if err != nil {
-			return err
-		}
-
-		store, err := storage.NewDBStorage(srv.cfg.DatabaseDSN)
-		if err != nil {
-			return err
-		}
-
-		srv.store = store
-		return nil
-	}
-
-	store := storage.NewMemStorage(srv.cfg.StoreInternal == 0, srv.cfg.FileStoragePath)
-	if srv.cfg.RestoreData {
-		err := store.LoadStorageFromFile()
-		if err != nil {
-			slog.Warn("restore data at start server", slog.String("error", err.Error()))
-		}
-	}
-	srv.store = store
-
-	return nil
-}
-
-func (srv *Server) migrate() error {
-	stdlib.GetDefaultDriver()
-
-	db, err := goose.OpenDBWithDriver("pgx", srv.cfg.DatabaseDSN)
-	if err != nil {
-		return err
-	}
-
-	goose.SetBaseFS(&migrations.Content)
-	err = goose.SetDialect("postgres")
-	if err != nil {
-		return err
-	}
-
-	err = goose.Up(db, ".")
-	if err != nil {
-		return err
-	}
-
-	return db.Close()
 }
 
 func (srv *Server) startHTTPServer() error {
@@ -109,13 +53,13 @@ func (srv *Server) shutdown(ctx context.Context) error {
 		return err
 	}
 
-	err = srv.store.DumpStorageToFile()
+	err = srv.services.StorageService.Save(ctx)
 	if err != nil {
 		slog.Error(err.Error())
 		return err
 	}
 
-	err = srv.store.Close()
+	err = srv.services.StorageService.Close()
 	if err != nil {
 		slog.Error(err.Error())
 		return err
@@ -126,8 +70,8 @@ func (srv *Server) shutdown(ctx context.Context) error {
 	return err
 }
 
+// Start runs server.
 func (srv *Server) Start(ctx context.Context) error {
-
 	grp, ctx := errgroup.WithContext(ctx)
 
 	grp.Go(func() error {
@@ -139,24 +83,6 @@ func (srv *Server) Start(ctx context.Context) error {
 
 		return srv.shutdown(ctx)
 	})
-
-	if srv.cfg.StoreInternal > 0 {
-		grp.Go(func() error {
-			for {
-				select {
-				case <-ctx.Done():
-					return nil
-				case <-time.After(srv.cfg.StoreInternal):
-					err := utils.RetryFunc(ctx, func() error {
-						return srv.store.DumpStorageToFile()
-					})
-					if err != nil {
-						slog.Error(fmt.Sprintf("error autosave: %s", err))
-					}
-				}
-			}
-		})
-	}
 
 	return grp.Wait()
 }

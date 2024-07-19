@@ -13,10 +13,16 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
+	"github.com/e1m0re/grdn/internal/gvar"
 	"github.com/e1m0re/grdn/internal/server"
+	"github.com/e1m0re/grdn/internal/server/config"
+	"github.com/e1m0re/grdn/internal/server/storage"
+	"github.com/e1m0re/grdn/internal/server/storage/store"
 )
 
 func main() {
+	gvar.PrintWelcome()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -28,16 +34,18 @@ func main() {
 		cancel()
 	}()
 
-	cfg := server.InitConfig()
+	cfg := config.InitConfig()
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel}))
 	slog.SetDefault(logger)
 
-	srv, err := server.NewServer(cfg)
+	s, err := initializeStore(ctx, cfg)
 	if err != nil {
 		slog.Error(err.Error())
+		return
 	}
 
+	srv := server.NewServer(cfg, s)
 	err = srv.Start(ctx)
 	if err != nil {
 		if errors.Is(err, http.ErrServerClosed) {
@@ -50,4 +58,23 @@ func main() {
 			slog.String("stack", string(debug.Stack())),
 		)
 	}
+}
+
+func initializeStore(ctx context.Context, cfg *config.Config) (store.Store, error) {
+	storeType := storage.TypeMemory
+	path := cfg.FileStoragePath
+	if len(cfg.DatabaseDSN) > 0 {
+		storeType = storage.TypePostgres
+		path = cfg.DatabaseDSN
+	}
+	newStore, err := store.NewStore(ctx, &storage.Config{
+		Path:     path,
+		Type:     storeType,
+		Interval: cfg.StoreInternal,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	return newStore, err
 }

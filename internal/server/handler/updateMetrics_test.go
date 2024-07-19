@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/e1m0re/grdn/internal/service"
-	mockservice "github.com/e1m0re/grdn/internal/service/mocks"
+	"github.com/e1m0re/grdn/internal/server/service"
+	"github.com/e1m0re/grdn/internal/server/service/metrics/mocks"
 )
 
 func TestHandler_updateMetricsList(t *testing.T) {
@@ -23,9 +23,9 @@ func TestHandler_updateMetricsList(t *testing.T) {
 		path   string
 	}
 	type want struct {
-		expectedStatusCode   int
 		expectedHeaders      map[string]string
 		expectedResponseBody string
+		expectedStatusCode   int
 	}
 	tests := []struct {
 		name         string
@@ -36,10 +36,10 @@ func TestHandler_updateMetricsList(t *testing.T) {
 		{
 			name: "Invalid method",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricsService(t)
+				mockMetricsManager := mocks.NewManager(t)
 
 				return &service.Services{
-					MetricsService: mockMetricService,
+					MetricsManager: mockMetricsManager,
 				}
 			},
 			args: args{
@@ -56,10 +56,10 @@ func TestHandler_updateMetricsList(t *testing.T) {
 		{
 			name: "Invalid Body",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricsService(t)
+				mockMetricsManager := mocks.NewManager(t)
 
 				return &service.Services{
-					MetricsService: mockMetricService,
+					MetricsManager: mockMetricsManager,
 				}
 			},
 			args: args{
@@ -77,13 +77,13 @@ func TestHandler_updateMetricsList(t *testing.T) {
 		{
 			name: "UpdateMetrics failed",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricsService(t)
-				mockMetricService.
+				mockMetricsManager := mocks.NewManager(t)
+				mockMetricsManager.
 					On("UpdateMetrics", mock.Anything, mock.AnythingOfType("models.MetricsList")).
 					Return(fmt.Errorf("something wrong"))
 
 				return &service.Services{
-					MetricsService: mockMetricService,
+					MetricsManager: mockMetricsManager,
 				}
 			},
 			args: args{
@@ -101,13 +101,13 @@ func TestHandler_updateMetricsList(t *testing.T) {
 		{
 			name: "Successfully test",
 			mockServices: func() *service.Services {
-				mockMetricService := mockservice.NewMetricsService(t)
-				mockMetricService.
+				mockMetricsManager := mocks.NewManager(t)
+				mockMetricsManager.
 					On("UpdateMetrics", mock.Anything, mock.AnythingOfType("models.MetricsList")).
 					Return(nil)
 
 				return &service.Services{
-					MetricsService: mockMetricService,
+					MetricsManager: mockMetricsManager,
 				}
 			},
 			args: args{

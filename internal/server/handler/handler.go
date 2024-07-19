@@ -7,19 +7,21 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	appMiddleware "github.com/e1m0re/grdn/internal/server/middleware"
-	"github.com/e1m0re/grdn/internal/service"
+	"github.com/e1m0re/grdn/internal/server/service"
 )
 
 type Handler struct {
 	services *service.Services
 }
 
+// NewHandler is Handler constructor.
 func NewHandler(services *service.Services) *Handler {
 	return &Handler{
 		services: services,
 	}
 }
 
+// NewRouter initializes new router.
 func (h *Handler) NewRouter(signKey string) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(appMiddleware.Logging())

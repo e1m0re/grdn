@@ -9,17 +9,18 @@ import (
 func (h *Handler) getMainPage(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "text/html")
 
-	metrics, err := h.services.MetricsService.GetMetricsList(request.Context())
+	metrics, err := h.services.MetricsManager.GetAllMetrics(request.Context())
 	if err != nil {
 		slog.Error(err.Error())
 		response.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	for _, value := range metrics {
-		_, err := fmt.Fprintf(response, "%s\r\n", value)
+	for _, metric := range *metrics {
+		_, err := fmt.Fprintf(response, "%s\r\n", metric.String())
 		if err != nil {
 			slog.Error(err.Error())
+			response.WriteHeader(http.StatusInternalServerError)
 		}
 	}
 

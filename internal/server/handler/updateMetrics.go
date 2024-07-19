@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -24,8 +25,10 @@ func (h *Handler) updateMetricsList(response http.ResponseWriter, request *http.
 		return
 	}
 
-	err = utils.RetryFunc(request.Context(), func() error {
-		return h.services.MetricsService.UpdateMetrics(request.Context(), metrics)
+	ctx, cancelFunc := context.WithCancel(request.Context())
+	defer cancelFunc()
+	err = utils.RetryFunc(ctx, func() error {
+		return h.services.MetricsManager.UpdateMetrics(ctx, metrics)
 	})
 	if err != nil {
 		slog.Error("update metrics error", slog.String("error", err.Error()))

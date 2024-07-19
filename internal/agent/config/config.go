@@ -1,3 +1,4 @@
+// Package config contains instruments for configuration of clients application.
 package config
 
 import (
@@ -8,14 +9,15 @@ import (
 )
 
 type Config struct {
-	ServerAddr     string
-	ReportInterval time.Duration
-	PollInterval   time.Duration
 	Key            string
+	ServerAddr     string
+	PollInterval   time.Duration
+	ReportInterval time.Duration
 	RateLimit      int
 }
 
-func GetConfig() *Config {
+// InitConfig initializes the clients application configuration.
+func InitConfig() *Config {
 	config := Config{}
 
 	var (

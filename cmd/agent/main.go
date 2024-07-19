@@ -12,6 +12,7 @@ import (
 
 	"github.com/e1m0re/grdn/internal/agent/app"
 	"github.com/e1m0re/grdn/internal/agent/config"
+	"github.com/e1m0re/grdn/internal/gvar"
 )
 
 var logger *zap.Logger
@@ -35,6 +36,8 @@ func init() {
 }
 
 func main() {
+	gvar.PrintWelcome()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -46,7 +49,7 @@ func main() {
 		cancel()
 	}()
 
-	cfg := config.GetConfig()
+	cfg := config.InitConfig()
 
 	app1 := app.NewApp(cfg)
 

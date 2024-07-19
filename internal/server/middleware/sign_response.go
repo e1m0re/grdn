@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+// SignResponse signs server responses.
 func SignResponse(key string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		h := hmac.New(sha256.New, []byte(key))

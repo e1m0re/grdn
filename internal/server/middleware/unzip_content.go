@@ -36,6 +36,7 @@ func (c *compressReader) Close() error {
 	return c.zr.Close()
 }
 
+// UnzipContent extracts requests body.
 func UnzipContent() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(

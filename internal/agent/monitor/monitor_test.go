@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/e1m0re/grdn/internal/models"
-	"github.com/e1m0re/grdn/internal/storage"
 )
 
 func TestMetricsMonitor_GetMetricsList(t *testing.T) {
@@ -24,8 +23,8 @@ func TestMetricsMonitor_GetMetricsList(t *testing.T) {
 			name: "test empty store",
 			fields: fields{
 				data: MetricsState{
-					make(map[storage.GaugeName]storage.GaugeDateType),
-					make(map[storage.CounterName]storage.CounterDateType),
+					make(map[models.GaugeName]models.GaugeDateType),
+					make(map[models.CounterName]models.CounterDateType),
 				},
 			},
 			want: make(models.MetricsList, 0),
@@ -34,10 +33,10 @@ func TestMetricsMonitor_GetMetricsList(t *testing.T) {
 			name: "test not empty store",
 			fields: fields{
 				data: MetricsState{
-					Gauges: map[storage.GaugeName]storage.GaugeDateType{
+					Gauges: map[models.GaugeName]models.GaugeDateType{
 						"metric1": v1,
 					},
-					Counters: map[storage.CounterName]storage.CounterDateType{
+					Counters: map[models.CounterName]models.CounterDateType{
 						"metric2": d1,
 					},
 				},
