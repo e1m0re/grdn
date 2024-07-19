@@ -84,6 +84,13 @@ func (app *App) Start(ctx context.Context) error {
 		}
 	})
 
+	grp.Go(func() error {
+		<-ctx.Done()
+		app.sendDataToServer(ctx, tasksQueue)
+
+		return nil
+	})
+
 	for i := 1; i <= app.cfg.RateLimit; i++ {
 		grp.Go(func() error {
 			for {
