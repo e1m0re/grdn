@@ -1,4 +1,4 @@
-package handler
+package api
 
 import (
 	"net/http/pprof"
@@ -7,15 +7,15 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	appMiddleware "github.com/e1m0re/grdn/internal/server/middleware"
-	"github.com/e1m0re/grdn/internal/server/service"
+	"github.com/e1m0re/grdn/internal/service"
 )
 
 type Handler struct {
-	services *service.Services
+	services *service.ServerServices
 }
 
 // NewHandler is Handler constructor.
-func NewHandler(services *service.Services) *Handler {
+func NewHandler(services *service.ServerServices) *Handler {
 	return &Handler{
 		services: services,
 	}

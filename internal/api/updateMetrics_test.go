@@ -1,6 +1,7 @@
-package handler
+package api
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"net/http"
@@ -10,15 +11,16 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/e1m0re/grdn/internal/models"
-	"github.com/e1m0re/grdn/internal/server/service"
-	"github.com/e1m0re/grdn/internal/server/service/metrics/mocks"
+	"github.com/e1m0re/grdn/internal/service"
+	"github.com/e1m0re/grdn/internal/service/metrics/mocks"
 )
 
-func TestHandler_getMainPage(t *testing.T) {
+func TestHandler_updateMetricsList(t *testing.T) {
 	type args struct {
+		body   string
 		ctx    context.Context
 		method string
+		path   string
 	}
 	type want struct {
 		expectedHeaders      map[string]string
@@ -27,106 +29,97 @@ func TestHandler_getMainPage(t *testing.T) {
 	}
 	tests := []struct {
 		name         string
-		mockServices func() *service.Services
+		mockServices func() *service.ServerServices
 		args         args
 		want         want
 	}{
 		{
 			name: "Invalid method",
-			mockServices: func() *service.Services {
+			mockServices: func() *service.ServerServices {
 				mockMetricsManager := mocks.NewManager(t)
 
-				return &service.Services{
-					MetricsManager: mockMetricsManager,
-				}
-			},
-			args: args{
-				ctx:    context.Background(),
-				method: http.MethodPost,
-			},
-			want: want{
-				expectedStatusCode:   http.StatusMethodNotAllowed,
-				expectedResponseBody: "",
-			},
-		},
-		{
-			name: "Request failed",
-			mockServices: func() *service.Services {
-				mockMetricsManager := mocks.NewManager(t)
-				mockMetricsManager.
-					On("GetAllMetrics", mock.Anything).
-					Return(nil, errors.New("something wrong"))
-
-				return &service.Services{
+				return &service.ServerServices{
 					MetricsManager: mockMetricsManager,
 				}
 			},
 			args: args{
 				ctx:    context.Background(),
 				method: http.MethodGet,
+				path:   "/updates",
 			},
 			want: want{
-				expectedStatusCode:   http.StatusInternalServerError,
+				expectedStatusCode:   http.StatusMethodNotAllowed,
 				expectedHeaders:      make(map[string]string),
 				expectedResponseBody: "",
 			},
 		},
 		{
-			name: "Empty metrics list",
-			mockServices: func() *service.Services {
+			name: "Invalid Body",
+			mockServices: func() *service.ServerServices {
 				mockMetricsManager := mocks.NewManager(t)
-				mockMetricsManager.
-					On("GetAllMetrics", mock.Anything).
-					Return(&models.MetricsList{}, nil)
 
-				return &service.Services{
+				return &service.ServerServices{
 					MetricsManager: mockMetricsManager,
 				}
 			},
 			args: args{
+				body:   "",
 				ctx:    context.Background(),
-				method: http.MethodGet,
+				method: http.MethodPost,
+				path:   "/updates",
 			},
 			want: want{
-				expectedHeaders:      map[string]string{"Content-Type": "text/html"},
-				expectedStatusCode:   http.StatusOK,
+				expectedStatusCode:   http.StatusBadRequest,
+				expectedHeaders:      make(map[string]string),
+				expectedResponseBody: "unexpected end of JSON input\n",
+			},
+		},
+		{
+			name: "UpdateMetrics failed",
+			mockServices: func() *service.ServerServices {
+				mockMetricsManager := mocks.NewManager(t)
+				mockMetricsManager.
+					On("UpdateMetrics", mock.Anything, mock.AnythingOfType("models.MetricsList")).
+					Return(errors.New("something wrong"))
+
+				return &service.ServerServices{
+					MetricsManager: mockMetricsManager,
+				}
+			},
+			args: args{
+				body:   "[{\"id\":\"metricId\",\"type\":\"metricType\"}]",
+				ctx:    context.Background(),
+				method: http.MethodPost,
+				path:   "/updates",
+			},
+			want: want{
+				expectedStatusCode:   http.StatusBadRequest,
+				expectedHeaders:      make(map[string]string),
 				expectedResponseBody: "",
 			},
 		},
 		{
-			name: "Successful test",
-			mockServices: func() *service.Services {
-				value := float64(100.100)
-				metric1 := &models.Metric{
-					Value: &value,
-					Delta: nil,
-					MType: models.GaugeType,
-					ID:    "metric1",
-				}
-				delta := int64(100)
-				metric2 := &models.Metric{
-					Value: nil,
-					Delta: &delta,
-					MType: models.CounterType,
-					ID:    "metric2",
-				}
+			name: "Successfully test",
+			mockServices: func() *service.ServerServices {
 				mockMetricsManager := mocks.NewManager(t)
 				mockMetricsManager.
-					On("GetAllMetrics", mock.Anything).
-					Return(&models.MetricsList{metric1, metric2}, nil)
+					On("UpdateMetrics", mock.Anything, mock.AnythingOfType("models.MetricsList")).
+					Return(nil)
 
-				return &service.Services{
+				return &service.ServerServices{
 					MetricsManager: mockMetricsManager,
 				}
 			},
 			args: args{
+				body:   "[{\"id\":\"metricId\",\"type\":\"metricType\"}]",
 				ctx:    context.Background(),
-				method: http.MethodGet,
+				method: http.MethodPost,
+				path:   "/updates",
 			},
 			want: want{
-				expectedHeaders:      map[string]string{"Content-Type": "text/html"},
 				expectedStatusCode:   http.StatusOK,
-				expectedResponseBody: "metric1: 100.1\r\nmetric2: 100\r\n",
+				expectedHeaders:      make(map[string]string),
+				expectedResponseBody: "",
 			},
 		},
 	}
@@ -136,7 +129,7 @@ func TestHandler_getMainPage(t *testing.T) {
 			handler := NewHandler(services)
 			router := handler.NewRouter("", "")
 
-			req, err := http.NewRequestWithContext(test.args.ctx, test.args.method, "/", nil)
+			req, err := http.NewRequestWithContext(test.args.ctx, test.args.method, test.args.path, bytes.NewReader([]byte(test.args.body)))
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()

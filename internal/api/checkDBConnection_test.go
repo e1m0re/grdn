@@ -1,4 +1,4 @@
-package handler
+package api
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/e1m0re/grdn/internal/server/service"
+	"github.com/e1m0re/grdn/internal/service"
 	"github.com/e1m0re/grdn/internal/storage/store"
 )
 
@@ -23,13 +23,13 @@ func TestHandler_checkDBConnection(t *testing.T) {
 	}
 	tests := []struct {
 		name         string
-		mockServices func() (*store.Store, *service.Services)
+		mockServices func() (*store.Store, *service.ServerServices)
 		args         args
 		want         want
 	}{
 		{
 			name: "Invalid method",
-			mockServices: func() (*store.Store, *service.Services) {
+			mockServices: func() (*store.Store, *service.ServerServices) {
 				return nil, nil
 			},
 			args: args{
@@ -47,13 +47,13 @@ func TestHandler_checkDBConnection(t *testing.T) {
 		//		ctx:    context.Background(),
 		//		method: http.MethodGet,
 		//	},
-		//	mockServices: func() *service.Services {
+		//	mockServices: func() *service.ServerServices {
 		//		mockStorageService := mockservice.NewStorageService(t)
 		//		mockStorageService.
 		//			On("PingDB", mock.Anything).
 		//			Return(errors.New("something wrong"))
 		//
-		//		return &service.Services{
+		//		return &service.ServerServices{
 		//			StorageService: mockStorageService,
 		//		}
 		//	},
@@ -68,13 +68,13 @@ func TestHandler_checkDBConnection(t *testing.T) {
 		//		ctx:    context.Background(),
 		//		method: http.MethodGet,
 		//	},
-		//	mockServices: func() *service.Services {
+		//	mockServices: func() *service.ServerServices {
 		//		mockStorageService := mockservice.NewStorageService(t)
 		//		mockStorageService.
 		//			On("PingDB", mock.Anything).
 		//			Return(nil)
 		//
-		//		return &service.Services{
+		//		return &service.ServerServices{
 		//			StorageService: mockStorageService,
 		//		}
 		//	},

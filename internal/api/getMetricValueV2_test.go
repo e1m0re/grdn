@@ -1,4 +1,4 @@
-package handler
+package api
 
 import (
 	"bytes"
@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/e1m0re/grdn/internal/models"
-	"github.com/e1m0re/grdn/internal/server/service"
-	"github.com/e1m0re/grdn/internal/server/service/metrics/mocks"
+	"github.com/e1m0re/grdn/internal/service"
+	"github.com/e1m0re/grdn/internal/service/metrics/mocks"
 )
 
 func TestHandler_getMetricValueV2(t *testing.T) {
@@ -32,16 +32,16 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 	}
 	tests := []struct {
 		name         string
-		mockServices func() *service.Services
+		mockServices func() *service.ServerServices
 		args         args
 		want         want
 	}{
 		{
 			name: "Invalid method",
-			mockServices: func() *service.Services {
+			mockServices: func() *service.ServerServices {
 				mockMetricsManager := mocks.NewManager(t)
 
-				return &service.Services{
+				return &service.ServerServices{
 					MetricsManager: mockMetricsManager,
 				}
 			},
@@ -57,10 +57,10 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 		},
 		{
 			name: "Invalid Body",
-			mockServices: func() *service.Services {
+			mockServices: func() *service.ServerServices {
 				mockMetricsManager := mocks.NewManager(t)
 
-				return &service.Services{
+				return &service.ServerServices{
 					MetricsManager: mockMetricsManager,
 				}
 			},
@@ -76,13 +76,13 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 		},
 		{
 			name: "Unknown metric",
-			mockServices: func() *service.Services {
+			mockServices: func() *service.ServerServices {
 				mockMetricsManager := mocks.NewManager(t)
 				mockMetricsManager.
 					On("GetMetric", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).
 					Return(nil, nil)
 
-				return &service.Services{
+				return &service.ServerServices{
 					MetricsManager: mockMetricsManager,
 				}
 			},
@@ -99,13 +99,13 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 		},
 		{
 			name: "GetMetric failed",
-			mockServices: func() *service.Services {
+			mockServices: func() *service.ServerServices {
 				mockMetricsManager := mocks.NewManager(t)
 				mockMetricsManager.
 					On("GetMetric", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).
 					Return(nil, errors.New("something wrong"))
 
-				return &service.Services{
+				return &service.ServerServices{
 					MetricsManager: mockMetricsManager,
 				}
 			},
@@ -122,7 +122,7 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 		},
 		{
 			name: "Successfully test (Counter metric)",
-			mockServices: func() *service.Services {
+			mockServices: func() *service.ServerServices {
 				mockMetricsManager := mocks.NewManager(t)
 				mockMetricsManager.
 					On("GetMetric", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).
@@ -133,7 +133,7 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 						Value: nil,
 					}, nil)
 
-				return &service.Services{
+				return &service.ServerServices{
 					MetricsManager: mockMetricsManager,
 				}
 			},
@@ -150,7 +150,7 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 		},
 		{
 			name: "Successfully test (GaugeType metric)",
-			mockServices: func() *service.Services {
+			mockServices: func() *service.ServerServices {
 				mockMetricsManager := mocks.NewManager(t)
 				mockMetricsManager.
 					On("GetMetric", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).
@@ -161,7 +161,7 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 						Value: &value,
 					}, nil)
 
-				return &service.Services{
+				return &service.ServerServices{
 					MetricsManager: mockMetricsManager,
 				}
 			},

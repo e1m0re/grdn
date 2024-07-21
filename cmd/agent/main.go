@@ -11,6 +11,7 @@ import (
 	"github.com/e1m0re/grdn/internal/agent/app"
 	"github.com/e1m0re/grdn/internal/agent/config"
 	"github.com/e1m0re/grdn/internal/gvar"
+	"github.com/e1m0re/grdn/internal/service"
 	"github.com/e1m0re/grdn/internal/signals"
 )
 
@@ -48,7 +49,13 @@ func main() {
 		return
 	}
 
-	app1, err := app.NewApp(cfg)
+	services, err := service.NewAgentServices(cfg)
+	if err != nil {
+		slog.Error(err.Error())
+		return
+	}
+
+	app1, err := app.NewApp(cfg, services)
 	if err != nil {
 		slog.Error(err.Error())
 		return

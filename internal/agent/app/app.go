@@ -9,10 +9,11 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/e1m0re/grdn/internal/agent/apiclient"
 	"github.com/e1m0re/grdn/internal/agent/config"
-	"github.com/e1m0re/grdn/internal/agent/monitor"
-	"github.com/e1m0re/grdn/internal/encryption"
+	"github.com/e1m0re/grdn/internal/service"
+	"github.com/e1m0re/grdn/internal/service/apiclient"
+	"github.com/e1m0re/grdn/internal/service/encryption"
+	"github.com/e1m0re/grdn/internal/service/monitor"
 	"github.com/e1m0re/grdn/internal/utils"
 )
 
@@ -26,21 +27,12 @@ type App struct {
 }
 
 // NewApp is App constructor.
-func NewApp(cfg *config.Config) (*App, error) {
-	var encr encryption.Encryptor
-	var err error
-	if len(cfg.PublicKeyFile) > 0 {
-		encr, err = encryption.NewEncryptor(cfg.PublicKeyFile)
-		if err != nil {
-			return nil, err
-		}
-	}
-
+func NewApp(cfg *config.Config, services *service.AgentServices) (*App, error) {
 	return &App{
-		apiClient: apiclient.NewAPIClient("http://"+cfg.ServerAddr, []byte(cfg.Key)),
+		apiClient: services.APIClient,
 		cfg:       cfg,
-		monitor:   monitor.NewMetricsMonitor(),
-		encryptor: encr,
+		monitor:   services.Monitor,
+		encryptor: services.Encryptor,
 	}, nil
 }
 

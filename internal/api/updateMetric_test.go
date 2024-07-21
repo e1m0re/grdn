@@ -1,9 +1,9 @@
-package handler
+package api
 
 import (
-	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,13 +11,14 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/e1m0re/grdn/internal/server/service"
-	"github.com/e1m0re/grdn/internal/server/service/metrics/mocks"
+	"github.com/e1m0re/grdn/internal/models"
+	"github.com/e1m0re/grdn/internal/service"
+	"github.com/e1m0re/grdn/internal/service/metrics/mocks"
 )
 
-func TestHandler_updateMetricsList(t *testing.T) {
+func TestHandler_updateMetric(t *testing.T) {
+	delta := int64(100)
 	type args struct {
-		body   string
 		ctx    context.Context
 		method string
 		path   string
@@ -29,23 +30,23 @@ func TestHandler_updateMetricsList(t *testing.T) {
 	}
 	tests := []struct {
 		name         string
-		mockServices func() *service.Services
+		mockServices func() *service.ServerServices
 		args         args
 		want         want
 	}{
 		{
 			name: "Invalid method",
-			mockServices: func() *service.Services {
+			mockServices: func() *service.ServerServices {
 				mockMetricsManager := mocks.NewManager(t)
 
-				return &service.Services{
+				return &service.ServerServices{
 					MetricsManager: mockMetricsManager,
 				}
 			},
 			args: args{
 				ctx:    context.Background(),
 				method: http.MethodGet,
-				path:   "/updates",
+				path:   fmt.Sprintf("/update/{%s}/{mName}/{%d}", models.CounterType, delta),
 			},
 			want: want{
 				expectedStatusCode:   http.StatusMethodNotAllowed,
@@ -54,43 +55,21 @@ func TestHandler_updateMetricsList(t *testing.T) {
 			},
 		},
 		{
-			name: "Invalid Body",
-			mockServices: func() *service.Services {
-				mockMetricsManager := mocks.NewManager(t)
-
-				return &service.Services{
-					MetricsManager: mockMetricsManager,
-				}
-			},
-			args: args{
-				body:   "",
-				ctx:    context.Background(),
-				method: http.MethodPost,
-				path:   "/updates",
-			},
-			want: want{
-				expectedStatusCode:   http.StatusBadRequest,
-				expectedHeaders:      make(map[string]string),
-				expectedResponseBody: "unexpected end of JSON input\n",
-			},
-		},
-		{
-			name: "UpdateMetrics failed",
-			mockServices: func() *service.Services {
+			name: "UpdateMetric failed",
+			mockServices: func() *service.ServerServices {
 				mockMetricsManager := mocks.NewManager(t)
 				mockMetricsManager.
-					On("UpdateMetrics", mock.Anything, mock.AnythingOfType("models.MetricsList")).
+					On("UpdateMetric", mock.Anything, mock.AnythingOfType("models.Metric")).
 					Return(errors.New("something wrong"))
 
-				return &service.Services{
+				return &service.ServerServices{
 					MetricsManager: mockMetricsManager,
 				}
 			},
 			args: args{
-				body:   "[{\"id\":\"metricId\",\"type\":\"metricType\"}]",
 				ctx:    context.Background(),
 				method: http.MethodPost,
-				path:   "/updates",
+				path:   fmt.Sprintf("/update/{%s}/{mName}/{%d}", models.CounterType, delta),
 			},
 			want: want{
 				expectedStatusCode:   http.StatusBadRequest,
@@ -100,21 +79,20 @@ func TestHandler_updateMetricsList(t *testing.T) {
 		},
 		{
 			name: "Successfully test",
-			mockServices: func() *service.Services {
+			mockServices: func() *service.ServerServices {
 				mockMetricsManager := mocks.NewManager(t)
 				mockMetricsManager.
-					On("UpdateMetrics", mock.Anything, mock.AnythingOfType("models.MetricsList")).
+					On("UpdateMetric", mock.Anything, mock.AnythingOfType("models.Metric")).
 					Return(nil)
 
-				return &service.Services{
+				return &service.ServerServices{
 					MetricsManager: mockMetricsManager,
 				}
 			},
 			args: args{
-				body:   "[{\"id\":\"metricId\",\"type\":\"metricType\"}]",
 				ctx:    context.Background(),
 				method: http.MethodPost,
-				path:   "/updates",
+				path:   fmt.Sprintf("/update/{%s}/{mName}/{%d}", models.CounterType, delta),
 			},
 			want: want{
 				expectedStatusCode:   http.StatusOK,
@@ -129,7 +107,7 @@ func TestHandler_updateMetricsList(t *testing.T) {
 			handler := NewHandler(services)
 			router := handler.NewRouter("", "")
 
-			req, err := http.NewRequestWithContext(test.args.ctx, test.args.method, test.args.path, bytes.NewReader([]byte(test.args.body)))
+			req, err := http.NewRequestWithContext(test.args.ctx, test.args.method, test.args.path, nil)
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()

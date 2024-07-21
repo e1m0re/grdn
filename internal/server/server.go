@@ -9,21 +9,21 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	appHandler "github.com/e1m0re/grdn/internal/api"
 	"github.com/e1m0re/grdn/internal/server/config"
-	appHandler "github.com/e1m0re/grdn/internal/server/handler"
-	"github.com/e1m0re/grdn/internal/server/service"
+	"github.com/e1m0re/grdn/internal/service"
 	"github.com/e1m0re/grdn/internal/storage/store"
 )
 
 type Server struct {
 	cfg        *config.Config
 	httpServer *http.Server
-	services   *service.Services
+	services   *service.ServerServices
 }
 
 // NewServer is Server constructor.
 func NewServer(cfg *config.Config, s store.Store) *Server {
-	services := service.NewServices(s)
+	services := service.NewServerServices(s)
 	handler := appHandler.NewHandler(services)
 
 	return &Server{

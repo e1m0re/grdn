@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/e1m0re/grdn/internal/encryption"
+	"github.com/e1m0re/grdn/internal/service/encryption"
 )
 
 type decryptReader struct {
