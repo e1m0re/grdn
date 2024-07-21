@@ -19,7 +19,7 @@ type Config struct {
 }
 
 // InitConfig initializes the clients application configuration.
-func InitConfig() *Config {
+func InitConfig() (*Config, error) {
 	config := Config{}
 
 	var (
@@ -35,7 +35,7 @@ func InitConfig() *Config {
 	if configFile != "" {
 		err := updateConfigFromFile(&config, configFile)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
 
@@ -85,7 +85,7 @@ func InitConfig() *Config {
 		config.PublicKeyFile = envCryptoKey
 	}
 
-	return &config
+	return &config, nil
 }
 
 func updateConfigFromFile(c *Config, path string) error {

@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
-	"fmt"
+	"errors"
 	"os"
 )
 
@@ -24,7 +24,7 @@ func NewEncryptor(keyFile string) (Encryptor, error) {
 		return nil, err
 	}
 
-	publicKey, err := parseRsaPublicKeyFromPemStr(pemKey)
+	publicKey, err := parseRSAPublicKeyFromPEMStr(pemKey)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func NewEncryptor(keyFile string) (Encryptor, error) {
 // Encrypt encrypts specified bytes with RSA OAEP.
 func (e *encryptor) Encrypt(plaintext []byte) ([]byte, error) {
 	if e.publicKey == nil {
-		return make([]byte, 0), fmt.Errorf("RSA public key not specified")
+		return nil, errors.New("RSA public key not specified")
 	}
 
 	return rsa.EncryptOAEP(sha256.New(), rand.Reader, e.publicKey, plaintext, nil)

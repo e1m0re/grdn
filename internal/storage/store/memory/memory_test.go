@@ -115,8 +115,8 @@ func TestStore_Close(t *testing.T) {
 		err error
 	}
 	tests := []struct {
-		name string
 		want want
+		name string
 	}{
 		{
 			name: "Successfully case",
@@ -140,9 +140,9 @@ func TestStore_Ping(t *testing.T) {
 		err error
 	}
 	tests := []struct {
-		name string
 		args args
 		want want
+		name string
 	}{
 		{
 			name: "Successfully case",
@@ -176,10 +176,10 @@ func TestStore_GetMetric(t *testing.T) {
 		err    error
 	}
 	tests := []struct {
-		name   string
 		fields fields
-		args   args
 		want   want
+		args   args
+		name   string
 	}{
 		{
 			name: "Unknown metric",
@@ -246,8 +246,8 @@ func TestStore_GetAllMetrics(t *testing.T) {
 		ctx context.Context
 	}
 	type want struct {
-		metrics models.MetricsList
 		err     error
+		metrics models.MetricsList
 	}
 	tests := []struct {
 		name   string
@@ -327,8 +327,8 @@ func TestStore_UpdateMetrics(t *testing.T) {
 	vNew := float64(100.1)
 	type fields struct {
 		metrics  map[string]models.Metric
-		syncMode bool
 		filePath string
+		syncMode bool
 	}
 	type args struct {
 		ctx     context.Context
@@ -339,10 +339,10 @@ func TestStore_UpdateMetrics(t *testing.T) {
 		err     error
 	}
 	tests := []struct {
-		name   string
 		fields fields
-		args   args
+		name   string
 		want   want
+		args   args
 	}{
 		{
 			name: "Update empty store without sync",

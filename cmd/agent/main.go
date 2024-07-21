@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"go.uber.org/zap"
 
 	"github.com/e1m0re/grdn/internal/agent/app"
 	"github.com/e1m0re/grdn/internal/agent/config"
 	"github.com/e1m0re/grdn/internal/gvar"
+	"github.com/e1m0re/grdn/internal/signals"
 )
 
 var logger *zap.Logger
@@ -41,20 +40,21 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go func() {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT)
+	go signals.HandleOSSignals(cancel)
 
-		<-c
-		cancel()
-	}()
-
-	cfg := config.InitConfig()
-
-	app1 := app.NewApp(cfg)
-
-	err := app1.Start(ctx)
+	cfg, err := config.InitConfig()
 	if err != nil {
+		slog.Error(err.Error())
+		return
+	}
+
+	app1, err := app.NewApp(cfg)
+	if err != nil {
+		slog.Error(err.Error())
+		return
+	}
+
+	if err = app1.Start(ctx); err != nil {
 		slog.Error(err.Error())
 	}
 }

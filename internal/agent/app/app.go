@@ -26,13 +26,13 @@ type App struct {
 }
 
 // NewApp is App constructor.
-func NewApp(cfg *config.Config) *App {
+func NewApp(cfg *config.Config) (*App, error) {
 	var encr encryption.Encryptor
 	var err error
 	if len(cfg.PublicKeyFile) > 0 {
 		encr, err = encryption.NewEncryptor(cfg.PublicKeyFile)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
 
@@ -41,7 +41,7 @@ func NewApp(cfg *config.Config) *App {
 		cfg:       cfg,
 		monitor:   monitor.NewMetricsMonitor(),
 		encryptor: encr,
-	}
+	}, nil
 }
 
 // Start runs client application.
@@ -65,7 +65,10 @@ func (app *App) Start(ctx context.Context) error {
 			case <-ctx.Done():
 				return nil
 			case <-time.After(app.cfg.PollInterval):
-				app.monitor.UpdateGOPS(ctx)
+				err := app.monitor.UpdateGOPS(ctx)
+				if err != nil {
+					slog.Error("error update GOPS data", slog.String("error", err.Error()))
+				}
 			}
 		}
 	})

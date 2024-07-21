@@ -78,7 +78,7 @@ func (m *MetricsMonitor) UpdateData() {
 }
 
 // UpdateGOPS collects add metrics data and updates local state.
-func (m *MetricsMonitor) UpdateGOPS(ctx context.Context) {
+func (m *MetricsMonitor) UpdateGOPS(ctx context.Context) error {
 	m.mx.Lock()
 	defer m.mx.Unlock()
 
@@ -89,12 +89,14 @@ func (m *MetricsMonitor) UpdateGOPS(ctx context.Context) {
 
 	percents, err := cpu.PercentWithContext(ctx, 0, true)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	for idx, percent := range percents {
 		m.data.Gauges[fmt.Sprintf("CPUutilization%d", idx)] = percent
 	}
+
+	return nil
 }
 
 // GetMetricsList returns all metrics.

@@ -3,7 +3,7 @@ package encryption
 import (
 	"crypto"
 	"crypto/rsa"
-	"fmt"
+	"errors"
 	"os"
 )
 
@@ -23,7 +23,7 @@ func NewDecryptor(keyFile string) (Decryptor, error) {
 		return nil, err
 	}
 
-	privateKey, err := parseRsaPrivateKeyFromPemStr(pemKey)
+	privateKey, err := parseRSAPrivateKeyFromPEMStr(pemKey)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func NewDecryptor(keyFile string) (Decryptor, error) {
 // Decrypt decrypts specified bytes with RSA OAEP.
 func (d *decryptor) Decrypt(ciphertext []byte) ([]byte, error) {
 	if d.privateKey == nil {
-		return make([]byte, 0), fmt.Errorf("RSA private key not specified")
+		return nil, errors.New("RSA private key not specified")
 	}
 
 	return d.privateKey.Decrypt(nil, ciphertext, rsa.OAEPOptions{Hash: crypto.SHA256})

@@ -3,7 +3,7 @@ package handler
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -80,7 +80,7 @@ func TestHandler_updateMetricsList(t *testing.T) {
 				mockMetricsManager := mocks.NewManager(t)
 				mockMetricsManager.
 					On("UpdateMetrics", mock.Anything, mock.AnythingOfType("models.MetricsList")).
-					Return(fmt.Errorf("something wrong"))
+					Return(errors.New("something wrong"))
 
 				return &service.Services{
 					MetricsManager: mockMetricsManager,

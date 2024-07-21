@@ -7,9 +7,9 @@ import (
 	"errors"
 )
 
-// ParseRsaPublicKeyFromPemStr parses public key from PEM.
-func parseRsaPublicKeyFromPemStr(pubPEM []byte) (*rsa.PublicKey, error) {
-	block, _ := pem.Decode(pubPEM)
+// parseRSAPublicKeyFromPEMStr parses public key from PEM.
+func parseRSAPublicKeyFromPEMStr(data []byte) (*rsa.PublicKey, error) {
+	block, _ := pem.Decode(data)
 	if block == nil {
 		return nil, errors.New("failed to parse PEM block containing the key")
 	}
@@ -28,8 +28,9 @@ func parseRsaPublicKeyFromPemStr(pubPEM []byte) (*rsa.PublicKey, error) {
 	return nil, errors.New("key type is not RSA")
 }
 
-func parseRsaPrivateKeyFromPemStr(privPEM []byte) (*rsa.PrivateKey, error) {
-	block, _ := pem.Decode(privPEM)
+// parseRSAPrivateKeyFromPEMStr parses public key from PEM.
+func parseRSAPrivateKeyFromPEMStr(data []byte) (*rsa.PrivateKey, error) {
+	block, _ := pem.Decode(data)
 	if block == nil {
 		return nil, errors.New("failed to parse PEM block containing the key")
 	}

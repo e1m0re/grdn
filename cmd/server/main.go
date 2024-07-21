@@ -7,15 +7,14 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"os/signal"
 	"runtime/debug"
-	"syscall"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/e1m0re/grdn/internal/gvar"
 	"github.com/e1m0re/grdn/internal/server"
 	"github.com/e1m0re/grdn/internal/server/config"
+	"github.com/e1m0re/grdn/internal/signals"
 	"github.com/e1m0re/grdn/internal/storage"
 	"github.com/e1m0re/grdn/internal/storage/store"
 )
@@ -26,22 +25,20 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go func() {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT)
+	go signals.HandleOSSignals(cancel)
 
-		<-c
-		cancel()
-	}()
-
-	cfg := config.InitConfig()
+	cfg, err := config.InitConfig()
+	if err != nil {
+		slog.Error("error init configuration", slog.String("error", err.Error()))
+		return
+	}
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel}))
 	slog.SetDefault(logger)
 
 	s, err := initializeStore(ctx, cfg)
 	if err != nil {
-		slog.Error(err.Error())
+		slog.Error("error init store", slog.String("error", err.Error()))
 		return
 	}
 
@@ -73,7 +70,7 @@ func initializeStore(ctx context.Context, cfg *config.Config) (store.Store, erro
 		Interval: cfg.StoreInternal,
 	})
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return newStore, err

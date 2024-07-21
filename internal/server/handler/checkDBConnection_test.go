@@ -51,7 +51,7 @@ func TestHandler_checkDBConnection(t *testing.T) {
 		//		mockStorageService := mockservice.NewStorageService(t)
 		//		mockStorageService.
 		//			On("PingDB", mock.Anything).
-		//			Return(fmt.Errorf("something wrong"))
+		//			Return(errors.New("something wrong"))
 		//
 		//		return &service.Services{
 		//			StorageService: mockStorageService,

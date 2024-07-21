@@ -2,7 +2,7 @@ package metrics
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -38,7 +38,7 @@ func Test_metricsManager_GetAllMetrics(t *testing.T) {
 				mockStore := mocks.NewStore(t)
 				mockStore.
 					On("GetAllMetrics", mock.Anything).
-					Return(nil, fmt.Errorf("something wrong"))
+					Return(nil, errors.New("something wrong"))
 				return mockStore
 			},
 			want: want{
@@ -148,7 +148,7 @@ func Test_metricsManager_GetMetric(t *testing.T) {
 				mockStore := mocks.NewStore(t)
 				mockStore.
 					On("GetMetric", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).
-					Return(nil, fmt.Errorf("something wrong"))
+					Return(nil, errors.New("something wrong"))
 
 				return mockStore
 			},
