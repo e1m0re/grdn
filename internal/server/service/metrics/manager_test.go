@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/e1m0re/grdn/internal/models"
-	"github.com/e1m0re/grdn/internal/server/storage/store"
-	"github.com/e1m0re/grdn/internal/server/storage/store/mocks"
+	"github.com/e1m0re/grdn/internal/storage/store"
+	"github.com/e1m0re/grdn/internal/storage/store/mocks"
 )
 
 func Test_metricsManager_GetAllMetrics(t *testing.T) {

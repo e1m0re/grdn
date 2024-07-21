@@ -16,8 +16,8 @@ import (
 	"github.com/e1m0re/grdn/internal/gvar"
 	"github.com/e1m0re/grdn/internal/server"
 	"github.com/e1m0re/grdn/internal/server/config"
-	"github.com/e1m0re/grdn/internal/server/storage"
-	"github.com/e1m0re/grdn/internal/server/storage/store"
+	"github.com/e1m0re/grdn/internal/storage"
+	"github.com/e1m0re/grdn/internal/storage/store"
 )
 
 func main() {

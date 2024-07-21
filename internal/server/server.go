@@ -12,7 +12,7 @@ import (
 	"github.com/e1m0re/grdn/internal/server/config"
 	appHandler "github.com/e1m0re/grdn/internal/server/handler"
 	"github.com/e1m0re/grdn/internal/server/service"
-	"github.com/e1m0re/grdn/internal/server/storage/store"
+	"github.com/e1m0re/grdn/internal/storage/store"
 )
 
 type Server struct {

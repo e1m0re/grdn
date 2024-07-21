@@ -3,7 +3,7 @@ package storage
 import (
 	"context"
 
-	"github.com/e1m0re/grdn/internal/server/storage/store"
+	"github.com/e1m0re/grdn/internal/storage/store"
 )
 
 // Service is the interface that contains all operations for storage.

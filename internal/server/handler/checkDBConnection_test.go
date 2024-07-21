@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/e1m0re/grdn/internal/server/service"
-	"github.com/e1m0re/grdn/internal/server/storage/store"
+	"github.com/e1m0re/grdn/internal/storage/store"
 )
 
 func TestHandler_checkDBConnection(t *testing.T) {

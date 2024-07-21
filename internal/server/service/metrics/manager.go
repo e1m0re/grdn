@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/e1m0re/grdn/internal/models"
-	"github.com/e1m0re/grdn/internal/server/storage"
-	"github.com/e1m0re/grdn/internal/server/storage/store"
+	"github.com/e1m0re/grdn/internal/storage"
+	"github.com/e1m0re/grdn/internal/storage/store"
 )
 
 // Manager is the interface that contains all operations for metrics.

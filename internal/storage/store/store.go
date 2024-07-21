@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/e1m0re/grdn/internal/models"
-	"github.com/e1m0re/grdn/internal/server/storage"
-	"github.com/e1m0re/grdn/internal/server/storage/store/memory"
-	"github.com/e1m0re/grdn/internal/server/storage/store/sql"
+	"github.com/e1m0re/grdn/internal/storage"
+	"github.com/e1m0re/grdn/internal/storage/store/memory"
+	"github.com/e1m0re/grdn/internal/storage/store/sql"
 	"github.com/e1m0re/grdn/internal/utils"
 )
 
