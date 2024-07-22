@@ -46,11 +46,10 @@ func (mm *metricsManager) GetMetric(ctx context.Context, mType models.MetricType
 	return mm.store.GetMetric(ctx, mType, mName)
 }
 
-// UpdateMetric performs updates to the value of the specified result in the store.
-func (mm *metricsManager) UpdateMetric(ctx context.Context, metric models.Metric) error {
+func (mm *metricsManager) processUpdateMetric(ctx context.Context, metric models.Metric) (*models.Metric, error) {
 	cm, err := mm.store.GetMetric(ctx, metric.MType, metric.ID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if cm == nil {
 		cm = &models.Metric{
@@ -65,10 +64,24 @@ func (mm *metricsManager) UpdateMetric(ctx context.Context, metric models.Metric
 	case models.GaugeType:
 		cm.Value = metric.Value
 	case models.CounterType:
-		newDelta := *cm.Delta + *metric.Delta
-		cm.Delta = &newDelta
+		if cm.Delta != nil {
+			newDelta := *cm.Delta + *metric.Delta
+			cm.Delta = &newDelta
+		} else {
+			cm.Delta = metric.Delta
+		}
 	default:
-		return storage.ErrUnknownMetricType
+		return nil, storage.ErrUnknownMetricType
+	}
+
+	return cm, nil
+}
+
+// UpdateMetric performs updates to the value of the specified result in the store.
+func (mm *metricsManager) UpdateMetric(ctx context.Context, metric models.Metric) error {
+	cm, err := mm.processUpdateMetric(ctx, metric)
+	if err != nil {
+		return err
 	}
 
 	return mm.store.UpdateMetrics(ctx, models.MetricsList{cm})
@@ -76,32 +89,14 @@ func (mm *metricsManager) UpdateMetric(ctx context.Context, metric models.Metric
 
 // UpdateMetrics performs batch updates of result values in the store.
 func (mm *metricsManager) UpdateMetrics(ctx context.Context, metrics models.MetricsList) error {
+	if len(metrics) == 0 {
+		return nil
+	}
+
 	for i, metric := range metrics {
-		cm, err := mm.store.GetMetric(ctx, metric.MType, metric.ID)
+		cm, err := mm.processUpdateMetric(ctx, *metric)
 		if err != nil {
 			return err
-		}
-		if cm == nil {
-			cm = &models.Metric{
-				Value: nil,
-				Delta: nil,
-				MType: metric.MType,
-				ID:    metric.ID,
-			}
-		}
-
-		switch cm.MType {
-		case models.GaugeType:
-			cm.Value = metric.Value
-		case models.CounterType:
-			if cm.Delta == nil {
-				cm.Delta = metric.Delta
-			} else {
-				newDelta := *cm.Delta + *metric.Delta
-				cm.Delta = &newDelta
-			}
-		default:
-			return storage.ErrUnknownMetricType
 		}
 
 		metrics[i] = cm
