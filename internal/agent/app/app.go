@@ -22,7 +22,7 @@ type content = []byte
 type App struct {
 	apiClient *apiclient.APIClient
 	cfg       *config.Config
-	monitor   *monitor.MetricsMonitor
+	monitor   monitor.Monitor
 	encryptor encryption.Encryptor
 }
 

@@ -265,10 +265,10 @@ func Test_metricsManager_UpdateMetric(t *testing.T) {
 		err error
 	}
 	tests := []struct {
-		name   string
 		fields fields
-		args   args
+		name   string
 		want   want
+		args   args
 	}{
 		{
 			name: "store.GetMetric failed",
@@ -441,10 +441,10 @@ func Test_metricsManager_UpdateMetrics(t *testing.T) {
 		err error
 	}
 	tests := []struct {
-		name   string
 		fields fields
-		args   args
+		name   string
 		want   want
+		args   args
 	}{
 		{
 			name: "Successfully update (empty args list)",

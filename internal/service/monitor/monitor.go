@@ -14,19 +14,28 @@ import (
 	"github.com/e1m0re/grdn/internal/models"
 )
 
+type Monitor interface {
+	// UpdateData collects main metrics data and updates local state.
+	UpdateData()
+	// UpdateGOPS collects add metrics data and updates local state.
+	UpdateGOPS(ctx context.Context) error
+	// GetMetricsList returns all metrics.
+	GetMetricsList() models.MetricsList
+}
+
 type MetricsState struct {
 	Gauges   map[models.GaugeName]models.GaugeDateType
 	Counters map[models.CounterName]models.CounterDateType
 }
 
-type MetricsMonitor struct {
+type monitor struct {
 	data MetricsState
 	mx   sync.RWMutex
 }
 
-// NewMetricsMonitor is MetricsMonitor constructor.
-func NewMetricsMonitor() *MetricsMonitor {
-	return &MetricsMonitor{
+// NewMonitor is MetricsMonitor constructor.
+func NewMonitor() Monitor {
+	return &monitor{
 		data: MetricsState{
 			Gauges:   make(map[models.GaugeName]models.GaugeDateType),
 			Counters: make(map[models.CounterName]models.CounterDateType),
@@ -35,7 +44,7 @@ func NewMetricsMonitor() *MetricsMonitor {
 }
 
 // UpdateData collects main metrics data and updates local state.
-func (m *MetricsMonitor) UpdateData() {
+func (m *monitor) UpdateData() {
 	m.mx.Lock()
 	defer m.mx.Unlock()
 
@@ -78,14 +87,14 @@ func (m *MetricsMonitor) UpdateData() {
 }
 
 // UpdateGOPS collects add metrics data and updates local state.
-func (m *MetricsMonitor) UpdateGOPS(ctx context.Context) error {
+func (m *monitor) UpdateGOPS(ctx context.Context) error {
 	m.mx.Lock()
 	defer m.mx.Unlock()
 
 	memoryInfo, _ := mem.VirtualMemoryWithContext(ctx)
 
-	m.data.Gauges["TotalMemory"] = models.GaugeDateType(memoryInfo.Total)
-	m.data.Gauges["FreeMemory"] = models.GaugeDateType(memoryInfo.Free)
+	m.data.Gauges[models.TotalMemory] = models.GaugeDateType(memoryInfo.Total)
+	m.data.Gauges[models.FreeMemory] = models.GaugeDateType(memoryInfo.Free)
 
 	percents, err := cpu.PercentWithContext(ctx, 0, true)
 	if err != nil {
@@ -100,7 +109,7 @@ func (m *MetricsMonitor) UpdateGOPS(ctx context.Context) error {
 }
 
 // GetMetricsList returns all metrics.
-func (m *MetricsMonitor) GetMetricsList() models.MetricsList {
+func (m *monitor) GetMetricsList() models.MetricsList {
 	m.mx.RLock()
 	defer m.mx.RUnlock()
 

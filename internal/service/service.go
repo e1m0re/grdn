@@ -27,7 +27,7 @@ func NewServerServices(s store.Store) *ServerServices {
 // AgentServices is agents DI-container.
 type AgentServices struct {
 	APIClient *apiclient.APIClient
-	Monitor   *monitor.MetricsMonitor
+	Monitor   monitor.Monitor
 	Encryptor encryption.Encryptor
 }
 
@@ -44,7 +44,7 @@ func NewAgentServices(cfg *config.Config) (*AgentServices, error) {
 
 	return &AgentServices{
 		APIClient: apiclient.NewAPIClient("http://"+cfg.ServerAddr, []byte(cfg.Key)),
-		Monitor:   monitor.NewMetricsMonitor(),
+		Monitor:   monitor.NewMonitor(),
 		Encryptor: encr,
 	}, nil
 }
