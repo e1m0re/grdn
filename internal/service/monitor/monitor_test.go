@@ -2,6 +2,8 @@ package monitor
 
 import (
 	"context"
+	"fmt"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -96,6 +98,9 @@ func TestMetricsMonitor_UpdateGOPS(t *testing.T) {
 					Counters: make(map[models.CounterName]models.CounterDateType),
 				},
 			},
+			args: args{
+				ctx: context.Background(),
+			},
 			want: want{
 				err: nil,
 				metricsNames: []models.MetricName{
@@ -112,12 +117,13 @@ func TestMetricsMonitor_UpdateGOPS(t *testing.T) {
 			}
 			err := m.UpdateGOPS(test.args.ctx)
 			assert.Equal(t, test.want.err, err)
+			fmt.Printf("------------------------ %v", m)
 			for _, name := range test.want.metricsNames {
 				assert.Contains(t, m.data.Gauges, name)
 			}
-			//for i := 0; i < runtime.NumCPU(); i++ {
-			//	assert.Contains(t, m.data.Gauges, fmt.Sprintf("CPUutilization%d", i))
-			//}
+			for i := 0; i < runtime.NumCPU(); i++ {
+				assert.Contains(t, m.data.Gauges, fmt.Sprintf("CPUutilization%d", i))
+			}
 		})
 	}
 }
