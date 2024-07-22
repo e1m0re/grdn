@@ -51,6 +51,7 @@ func (api *APIClient) DoRequest(request *http.Request) (*http.Response, error) {
 		)
 	}
 
+	// todo внимательно посмотреть на обработку ответов с кодом > 400
 	if err == nil && response.StatusCode < 500 {
 		return response, err
 	}
