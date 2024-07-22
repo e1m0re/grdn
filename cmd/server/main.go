@@ -7,25 +7,24 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"runtime/debug"
+	"syscall"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/e1m0re/grdn/internal/gvar"
 	"github.com/e1m0re/grdn/internal/server"
 	"github.com/e1m0re/grdn/internal/server/config"
-	"github.com/e1m0re/grdn/internal/signals"
 	"github.com/e1m0re/grdn/internal/storage"
 	"github.com/e1m0re/grdn/internal/storage/store"
 )
 
 func main() {
-	gvar.PrintWelcome()
-
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 	defer cancel()
 
-	go signals.HandleOSSignals(cancel)
+	gvar.PrintWelcome()
 
 	cfg, err := config.InitConfig()
 	if err != nil {
