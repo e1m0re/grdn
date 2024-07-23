@@ -314,7 +314,7 @@ func TestStore_GetAllMetrics(t *testing.T) {
 				metrics: test.fields.metrics,
 			}
 			got, err := s.GetAllMetrics(test.args.ctx)
-			assert.Equal(t, test.want.metrics, *got)
+			assert.Equal(t, &test.want.metrics, got)
 			assert.Equal(t, test.want.err, err)
 		})
 	}
