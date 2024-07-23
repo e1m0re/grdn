@@ -39,5 +39,5 @@ func (d *decryptor) Decrypt(ciphertext []byte) ([]byte, error) {
 		return nil, errors.New("RSA private key not specified")
 	}
 
-	return d.privateKey.Decrypt(nil, ciphertext, rsa.OAEPOptions{Hash: crypto.SHA256})
+	return d.privateKey.Decrypt(nil, ciphertext, &rsa.OAEPOptions{Hash: crypto.SHA256})
 }

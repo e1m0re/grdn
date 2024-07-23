@@ -20,9 +20,9 @@ func Test_parseRSAPublicKeyFromPEMStr(t *testing.T) {
 		err error
 	}
 	tests := []struct {
+		want want
 		name string
 		args args
-		want want
 	}{
 		{
 			name: "incorrect incoming data",
@@ -80,9 +80,9 @@ func Test_parseRSAPrivateKeyFromPEMStr(t *testing.T) {
 		err error
 	}
 	tests := []struct {
+		want want
 		name string
 		args args
-		want want
 	}{
 		{
 			name: "incorrect incoming data",
