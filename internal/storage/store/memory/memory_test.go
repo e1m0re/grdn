@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/e1m0re/grdn/internal/models"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"os"
 	"testing"
 	"time"
 )
@@ -494,6 +496,75 @@ func TestStore_UpdateMetrics(t *testing.T) {
 			err := s.UpdateMetrics(test.args.ctx, test.args.metrics)
 			assert.Equal(t, test.want.err, err)
 			assert.Equal(t, test.want.metrics, s.metrics)
+		})
+	}
+}
+
+func TestStore_Save(t *testing.T) {
+	d := int64(100)
+	v := float64(100.1)
+	type fields struct {
+		metrics  map[string]models.Metric
+		filePath string
+	}
+	type args struct {
+		ctx context.Context
+	}
+	type want struct {
+		err       error
+		content   []byte
+		fileExist bool
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   want
+	}{
+		{
+			name: "successfully case",
+			fields: fields{
+				metrics: map[string]models.Metric{
+					"abc123": {
+						Value: &v,
+						Delta: nil,
+						MType: models.GaugeType,
+						ID:    "metric 1",
+					},
+					"abc124": {
+						Value: nil,
+						Delta: &d,
+						MType: models.CounterType,
+						ID:    "metric 2",
+					},
+				},
+				filePath: "/tmp/TestStore_Save.bac",
+			},
+			args: args{
+				ctx: context.Background(),
+			},
+			want: want{
+				err:       nil,
+				fileExist: true,
+				content:   []byte("[{\"value\":100.1,\"type\":\"gauge\",\"id\":\"metric 1\"},{\"delta\":100,\"type\":\"counter\",\"id\":\"metric 2\"}]"),
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			os.Remove(test.fields.filePath)
+			s := &Store{
+				metrics:  test.fields.metrics,
+				filePath: test.fields.filePath,
+			}
+			err := s.Save(test.args.ctx)
+			require.Equal(t, test.want.err, err)
+			if test.want.fileExist {
+				require.FileExists(t, test.fields.filePath)
+				c, err := os.ReadFile(test.fields.filePath)
+				require.Nil(t, err)
+				assert.Equal(t, test.want.content, c)
+			}
 		})
 	}
 }
