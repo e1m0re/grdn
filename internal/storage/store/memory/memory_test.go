@@ -3,12 +3,14 @@ package memory
 import (
 	"context"
 	"fmt"
-	"github.com/e1m0re/grdn/internal/models"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/e1m0re/grdn/internal/models"
 )
 
 func TestStore_Clear(t *testing.T) {
@@ -525,13 +527,13 @@ func TestStore_Save(t *testing.T) {
 			name: "successfully case",
 			fields: fields{
 				metrics: map[string]models.Metric{
-					"abc123": {
+					"9e646d6d5855fbdadcaab202f1748505": {
 						Value: &v,
 						Delta: nil,
 						MType: models.GaugeType,
 						ID:    "metric 1",
 					},
-					"abc124": {
+					"3e0673a56ff12916a6293fa5a1bfc2db": {
 						Value: nil,
 						Delta: &d,
 						MType: models.CounterType,
@@ -565,6 +567,122 @@ func TestStore_Save(t *testing.T) {
 				require.Nil(t, err)
 				assert.Equal(t, test.want.content, c)
 			}
+		})
+	}
+}
+
+func TestStore_Restore(t *testing.T) {
+	d := int64(100)
+	v := float64(100.1)
+	type fields struct {
+		metrics  map[string]models.Metric
+		filePath string
+		content  []byte
+	}
+	type args struct {
+		ctx context.Context
+	}
+	type want struct {
+		metrics map[string]models.Metric
+		err     error
+	}
+	tests := []struct {
+		name   string
+		args   args
+		want   want
+		fields fields
+	}{
+		{
+			name: "successfully case",
+			fields: fields{
+				metrics:  make(map[string]models.Metric),
+				filePath: "/tmp/TestStore_Restore.bac",
+				content:  []byte("[{\"delta\":100,\"type\":\"counter\",\"id\":\"metric 2\"},{\"value\":100.1,\"type\":\"gauge\",\"id\":\"metric 1\"}]"),
+			},
+			args: args{
+				ctx: context.Background(),
+			},
+			want: want{
+				err: nil,
+				metrics: map[string]models.Metric{
+					"9e646d6d5855fbdadcaab202f1748505": {
+						Value: &v,
+						MType: models.GaugeType,
+						ID:    "metric 1",
+					},
+					"3e0673a56ff12916a6293fa5a1bfc2db": {
+						Delta: &d,
+						MType: models.CounterType,
+						ID:    "metric 2",
+					},
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			f, err := os.Create(test.fields.filePath)
+			require.Nil(t, err)
+			_, err = f.Write(test.fields.content)
+			require.Nil(t, err)
+			s := &Store{
+				metrics:  test.fields.metrics,
+				filePath: test.fields.filePath,
+			}
+			err = s.Restore(test.args.ctx)
+			require.Equal(t, test.want.err, err)
+			if err == nil {
+				require.Equal(t, len(test.want.metrics), len(s.metrics))
+				for key, metric := range test.want.metrics {
+					m, ok := s.metrics[key]
+					require.True(t, ok)
+					require.Equal(t, metric, m)
+				}
+			}
+		})
+	}
+}
+
+func TestNewStore(t *testing.T) {
+	type args struct {
+		ctx      context.Context
+		filePath string
+		syncMode bool
+	}
+	type want struct {
+		str *Store
+		err error
+	}
+	tests := []struct {
+		want want
+		name string
+		args args
+	}{
+		{
+			name: "Successfully case without restore",
+			args: args{
+				ctx:      context.Background(),
+				filePath: "",
+				syncMode: false,
+			},
+			want: want{
+				str: &Store{
+					metrics:  make(map[string]models.Metric),
+					filePath: "",
+					syncMode: false,
+				},
+				err: nil,
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := NewStore(test.args.ctx, test.args.filePath, test.args.syncMode)
+			require.Equal(t, test.want.err, err)
+			//assert.Implements(t, (*store.Store)(nil), got)
+			assert.Equal(t, test.want.str.metrics, got.metrics)
+			assert.Equal(t, test.want.str.filePath, got.filePath)
+			assert.Equal(t, test.want.str.syncMode, got.syncMode)
 		})
 	}
 }

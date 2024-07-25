@@ -57,7 +57,7 @@ func NewStore(ctx context.Context, cfg *storage.Config) (Store, error) {
 	)
 	switch cfg.Type {
 	case storage.TypePostgres:
-		store, err = sql.NewStore(cfg.Path)
+		store, err = sql.NewStore("pgx", cfg.Path)
 	case storage.TypeMemory:
 		fallthrough
 	default:

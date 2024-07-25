@@ -16,31 +16,45 @@ import (
 var (
 	// ErrPathNotSpecified is the error returned when the path parameter passed in NewStore is blank
 	ErrPathNotSpecified = errors.New("path cannot be empty")
+	// ErrDatabaseDriverNotSpecified is the error returned when the driver parameter passed in NewStore is blank
+	ErrDatabaseDriverNotSpecified = errors.New("database driver cannot be empty")
 )
 
 // Store that leverages a database.
 type Store struct {
-	db   *sqlx.DB
-	path string
+	db     *sqlx.DB
+	driver string
+	path   string
 }
 
 // NewStore initializes the database and creates the schema if it doesn't already exist in the path specified.
-func NewStore(path string) (*Store, error) {
+func NewStore(driver string, path string) (*Store, error) {
+	if len(driver) == 0 {
+		return nil, ErrDatabaseDriverNotSpecified
+	}
 	if len(path) == 0 {
 		return nil, ErrPathNotSpecified
 	}
-	store := &Store{path: path}
+
+	store := &Store{
+		driver: driver,
+		path:   path,
+	}
+
 	var err error
-	if store.db, err = sqlx.Open("pgx", path); err != nil {
+	if store.db, err = sqlx.Open(driver, path); err != nil {
 		return nil, err
 	}
+
 	if err = store.db.Ping(); err != nil {
 		return nil, err
 	}
+
 	if err = store.migrate(); err != nil {
 		_ = store.db.Close()
 		return nil, err
 	}
+
 	return store, nil
 }
 
@@ -79,9 +93,11 @@ func (s *Store) Close() error {
 
 // GetAllMetrics returns the list of all metrics.
 func (s *Store) GetAllMetrics(ctx context.Context) (*models.MetricsList, error) {
-	var metrics models.MetricsList
+	metrics := make(models.MetricsList, 0)
 	err := s.db.SelectContext(ctx, &metrics, "SELECT name, type, delta, value FROM metrics")
-
+	if err != nil {
+		return nil, err
+	}
 	return &metrics, err
 }
 
