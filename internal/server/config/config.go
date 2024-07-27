@@ -9,6 +9,26 @@ import (
 	"time"
 )
 
+const (
+	defaultServerAddr      = "localhost:8080"
+	defaultVerboseMode     = false
+	defaultStoreInternal   = 300 * time.Second
+	defaultFileStoragePath = "/tmp/metrics-db.json"
+	defaultRestoreData     = true
+	defaultDatabaseDSN     = ""
+	defaultKey             = ""
+	defaultPrivateKeyFile  = ""
+
+	envConfigFileName      = "CONFIG"
+	envRunAddrName         = "ADDRESS"
+	envStoreIntervalName   = "STORE_INTERVAL"
+	envFileStoragePathName = "FILE_STORAGE_PATH"
+	envRestoreDataName     = "RESTORE"
+	envDatabaseDSNName     = "DATABASE_DSN"
+	envKeyName             = "KEY"
+	envCryptoKeyName       = "CRYPTO_KEY"
+)
+
 type Config struct {
 	FileStoragePath string `yaml:"store_file"`
 	LoggerLevel     string
@@ -31,7 +51,7 @@ func InitConfig() (*Config, error) {
 
 	var configFile string
 	flag.StringVar(&configFile, "c", "", "config file (JSON)")
-	if envConfigFile := os.Getenv("CONFIG"); envConfigFile != "" {
+	if envConfigFile := os.Getenv(envConfigFileName); envConfigFile != "" {
 		configFile = envConfigFile
 	}
 	if configFile != "" {
@@ -41,17 +61,17 @@ func InitConfig() (*Config, error) {
 		}
 	}
 
-	flag.StringVar(&config.ServerAddr, "a", "localhost:8080", "address and port to run server")
-	flag.BoolVar(&config.VerboseMode, "v", false, "Torn on extended logging mode")
-	flag.DurationVar(&config.StoreInternal, "i", 300*time.Second, "time interval to save data to HDD")
-	flag.StringVar(&config.FileStoragePath, "f", "/tmp/metrics-db.json", "file path for DB file")
-	flag.BoolVar(&config.RestoreData, "r", true, "save or don't save data to HDD on shutdown")
-	flag.StringVar(&config.DatabaseDSN, "d", "", "database connection string")
-	flag.StringVar(&config.Key, "k", "", "key to use for encryption")
-	flag.StringVar(&config.PrivateKeyFile, "crypto-key", "", "public key file path")
+	flag.StringVar(&config.ServerAddr, "a", defaultServerAddr, "address and port to run server")
+	flag.BoolVar(&config.VerboseMode, "v", defaultVerboseMode, "Torn on extended logging mode")
+	flag.DurationVar(&config.StoreInternal, "i", defaultStoreInternal, "time interval to save data to HDD")
+	flag.StringVar(&config.FileStoragePath, "f", defaultFileStoragePath, "file path for DB file")
+	flag.BoolVar(&config.RestoreData, "r", defaultRestoreData, "save or don't save data to HDD on shutdown")
+	flag.StringVar(&config.DatabaseDSN, "d", defaultDatabaseDSN, "database connection string")
+	flag.StringVar(&config.Key, "k", defaultKey, "key to use for encryption")
+	flag.StringVar(&config.PrivateKeyFile, "crypto-key", defaultPrivateKeyFile, "public key file path")
 	flag.Parse()
 
-	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
+	if envRunAddr := os.Getenv(envRunAddrName); envRunAddr != "" {
 		config.ServerAddr = envRunAddr
 	}
 
@@ -60,30 +80,30 @@ func InitConfig() (*Config, error) {
 		config.LoggerLevel = "debug"
 	}
 
-	if envStoreInterval := os.Getenv("STORE_INTERVAL"); envStoreInterval != "" {
+	if envStoreInterval := os.Getenv(envStoreIntervalName); envStoreInterval != "" {
 		value, err := time.ParseDuration(envStoreInterval)
 		if err == nil {
 			config.StoreInternal = value
 		}
 	}
 
-	if envFileStoragePath := os.Getenv("FILE_STORAGE_PATH"); envFileStoragePath != "" {
+	if envFileStoragePath := os.Getenv(envFileStoragePathName); envFileStoragePath != "" {
 		config.FileStoragePath = envFileStoragePath
 	}
 
-	if envRestoreData := os.Getenv("RESTORE"); envRestoreData != "" {
+	if envRestoreData := os.Getenv(envRestoreDataName); envRestoreData != "" {
 		config.RestoreData = envRestoreData == "true"
 	}
 
-	if envDatabaseDSN := os.Getenv("DATABASE_DSN"); envDatabaseDSN != "" {
+	if envDatabaseDSN := os.Getenv(envDatabaseDSNName); envDatabaseDSN != "" {
 		config.DatabaseDSN = envDatabaseDSN
 	}
 
-	if envKey := os.Getenv("KEY"); envKey != "" {
+	if envKey := os.Getenv(envKeyName); envKey != "" {
 		config.Key = envKey
 	}
 
-	if envCryptoKey := os.Getenv("CRYPTO_KEY"); envCryptoKey != "" {
+	if envCryptoKey := os.Getenv(envCryptoKeyName); envCryptoKey != "" {
 		config.PrivateKeyFile = envCryptoKey
 	}
 

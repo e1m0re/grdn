@@ -9,6 +9,23 @@ import (
 	"time"
 )
 
+const (
+	defaultServerAddr     = "localhost:8080"
+	defaultReportInterval = 10
+	defaultPollInterval   = 2
+	defaultKey            = ""
+	defaultRateLimit      = 1
+	defaultPublicKey      = ""
+
+	envConfigFileName     = "CONFIG"
+	envServerAddrName     = "ADDRESS"
+	envReportIntervalName = "REPORT_INTERVAL"
+	envPollInterval       = "POLL_INTERVAL"
+	envKeyName            = "KEY"
+	envRateLimit          = "RATE_LIMIT"
+	envCryptoKeyName      = "CRYPTO_KEY"
+)
+
 type Config struct {
 	Key            string
 	PublicKeyFile  string        `yaml:"crypto_key"`
@@ -29,7 +46,7 @@ func InitConfig() (*Config, error) {
 
 	var configFile string
 	flag.StringVar(&configFile, "c", "", "config file (JSON)")
-	if envConfigFile := os.Getenv("CONFIG"); envConfigFile != "" {
+	if envConfigFile := os.Getenv(envConfigFileName); envConfigFile != "" {
 		configFile = envConfigFile
 	}
 	if configFile != "" {
@@ -39,19 +56,19 @@ func InitConfig() (*Config, error) {
 		}
 	}
 
-	flag.StringVar(&config.ServerAddr, "a", "localhost:8080", "address and port to run server")
-	flag.UintVar(&reportInterval, "r", 10, "frequency of sending metrics to the server")
-	flag.UintVar(&pollInterval, "p", 2, "frequency of polling metrics from the package")
-	flag.StringVar(&config.Key, "k", "", "key to use for encryption")
-	flag.IntVar(&config.RateLimit, "l", 1, "limit of threads count")
-	flag.StringVar(&config.PublicKeyFile, "crypto-key", "", "public key file path")
+	flag.StringVar(&config.ServerAddr, "a", defaultServerAddr, "address and port to run server")
+	flag.UintVar(&reportInterval, "r", defaultReportInterval, "frequency of sending metrics to the server")
+	flag.UintVar(&pollInterval, "p", defaultPollInterval, "frequency of polling metrics from the package")
+	flag.StringVar(&config.Key, "k", defaultKey, "key to use for encryption")
+	flag.IntVar(&config.RateLimit, "l", defaultRateLimit, "limit of threads count")
+	flag.StringVar(&config.PublicKeyFile, "crypto-key", defaultPublicKey, "public key file path")
 	flag.Parse()
 
-	if envServerAddr := os.Getenv("ADDRESS"); envServerAddr != "" {
+	if envServerAddr := os.Getenv(envServerAddrName); envServerAddr != "" {
 		config.ServerAddr = envServerAddr
 	}
 
-	if envReportInterval := os.Getenv("REPORT_INTERVAL"); envReportInterval != "" {
+	if envReportInterval := os.Getenv(envReportIntervalName); envReportInterval != "" {
 		envValue, err := strconv.Atoi(envReportInterval)
 		if err == nil {
 			reportInterval = uint(envValue)
@@ -59,7 +76,7 @@ func InitConfig() (*Config, error) {
 	}
 	config.ReportInterval = time.Duration(reportInterval) * time.Second
 
-	if envPollInterval := os.Getenv("POLL_INTERVAL"); envPollInterval != "" {
+	if envPollInterval := os.Getenv(envPollInterval); envPollInterval != "" {
 		envValue, err := strconv.Atoi(envPollInterval)
 		if err == nil {
 			pollInterval = uint(envValue)
@@ -67,11 +84,11 @@ func InitConfig() (*Config, error) {
 	}
 	config.PollInterval = time.Duration(pollInterval) * time.Second
 
-	if envKey := os.Getenv("KEY"); envKey != "" {
+	if envKey := os.Getenv(envKeyName); envKey != "" {
 		config.Key = envKey
 	}
 
-	if envRateLimit := os.Getenv("RATE_LIMIT"); envRateLimit != "" {
+	if envRateLimit := os.Getenv(envRateLimit); envRateLimit != "" {
 		envValue, err := strconv.Atoi(envRateLimit)
 		if err == nil {
 			config.RateLimit = envValue
@@ -81,7 +98,7 @@ func InitConfig() (*Config, error) {
 		config.RateLimit = 1
 	}
 
-	if envCryptoKey := os.Getenv("CRYPTO_KEY"); envCryptoKey != "" {
+	if envCryptoKey := os.Getenv(envCryptoKeyName); envCryptoKey != "" {
 		config.PublicKeyFile = envCryptoKey
 	}
 
