@@ -15,28 +15,36 @@ import (
 	"github.com/e1m0re/grdn/internal/storage/store"
 )
 
-type Server struct {
+//go:generate go run github.com/vektra/mockery/v2@v2.43.1 --name=Server
+type Server interface {
+	// Start runs server.
+	Start(ctx context.Context) error
+}
+
+type srv struct {
 	cfg        *config.Config
 	httpServer *http.Server
 	services   *service.ServerServices
 }
 
-// NewServer is Server constructor.
-func NewServer(cfg *config.Config, s store.Store) *Server {
-	services := service.NewServerServices(s)
-	handler := appHandler.NewHandler(services)
+// Start runs server.
+func (srv *srv) Start(ctx context.Context) error {
+	grp, ctx := errgroup.WithContext(ctx)
 
-	return &Server{
-		cfg: cfg,
-		httpServer: &http.Server{
-			Addr:    cfg.ServerAddr,
-			Handler: handler.NewRouter(cfg.Key, cfg.PrivateKeyFile),
-		},
-		services: services,
-	}
+	grp.Go(func() error {
+		return srv.startHTTPServer()
+	})
+
+	grp.Go(func() error {
+		<-ctx.Done()
+
+		return srv.shutdown(ctx)
+	})
+
+	return grp.Wait()
 }
 
-func (srv *Server) startHTTPServer() error {
+func (srv *srv) startHTTPServer() error {
 	slog.Info(fmt.Sprintf("Running server on %s", srv.cfg.ServerAddr))
 	err := srv.httpServer.ListenAndServe()
 	if err != nil && errors.Is(err, http.ErrServerClosed) {
@@ -46,7 +54,7 @@ func (srv *Server) startHTTPServer() error {
 	return err
 }
 
-func (srv *Server) shutdown(ctx context.Context) error {
+func (srv *srv) shutdown(ctx context.Context) error {
 	err := srv.httpServer.Shutdown(ctx)
 	if err != nil {
 		slog.Error("failed to shutdown http server")
@@ -65,24 +73,22 @@ func (srv *Server) shutdown(ctx context.Context) error {
 		return err
 	}
 
-	slog.Info("Server shutdown complete")
+	slog.Info("srv shutdown complete")
 
 	return err
 }
 
-// Start runs server.
-func (srv *Server) Start(ctx context.Context) error {
-	grp, ctx := errgroup.WithContext(ctx)
+// NewServer is srv constructor.
+func NewServer(cfg *config.Config, s store.Store) Server {
+	services := service.NewServerServices(s)
+	handler := appHandler.NewHandler(services)
 
-	grp.Go(func() error {
-		return srv.startHTTPServer()
-	})
-
-	grp.Go(func() error {
-		<-ctx.Done()
-
-		return srv.shutdown(ctx)
-	})
-
-	return grp.Wait()
+	return &srv{
+		cfg: cfg,
+		httpServer: &http.Server{
+			Addr:    cfg.ServerAddr,
+			Handler: handler.NewRouter(cfg.Key, cfg.PrivateKeyFile),
+		},
+		services: services,
+	}
 }
