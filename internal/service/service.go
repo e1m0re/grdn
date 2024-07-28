@@ -26,7 +26,7 @@ func NewServerServices(s store.Store) *ServerServices {
 
 // AgentServices is agents DI-container.
 type AgentServices struct {
-	APIClient *apiclient.APIClient
+	APIClient apiclient.APIClient
 	Monitor   monitor.Monitor
 	Encryptor encryption.Encryptor
 }

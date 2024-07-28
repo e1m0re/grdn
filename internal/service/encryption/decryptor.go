@@ -7,6 +7,7 @@ import (
 	"os"
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.43.1 --name=Decryptor
 type Decryptor interface {
 	// Decrypt decrypts specified bytes with RSA OAEP.
 	Decrypt(ciphertext []byte) ([]byte, error)

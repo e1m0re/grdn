@@ -1,3 +1,2 @@
 ignore:
-  - "internal/service/metrics/mocks/Manager.go"
-  - "internal/storage/store/mocks/Store.go"
+  - "**/mocks/*.go"

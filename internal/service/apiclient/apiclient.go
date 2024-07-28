@@ -25,15 +25,23 @@ func compressBody(content *[]byte) (*bytes.Buffer, error) {
 	return &buf, nil
 }
 
-type APIClient struct {
+//go:generate go run github.com/vektra/mockery/v2@v2.43.1 --name=APIClient
+type APIClient interface {
+	// DoRequest executes HTTP request.
+	DoRequest(request *http.Request) (*http.Response, error)
+	// SendMetricsData sends metrics data to server.
+	SendMetricsData(data *[]byte) error
+}
+
+type client struct {
 	client  *http.Client
 	baseURL string
 	key     []byte
 }
 
-// NewAPIClient is APIClient constructor.
-func NewAPIClient(baseURL string, key []byte) *APIClient {
-	return &APIClient{
+// NewAPIClient is client constructor.
+func NewAPIClient(baseURL string, key []byte) APIClient {
+	return &client{
 		client:  &http.Client{},
 		baseURL: baseURL,
 		key:     key,
@@ -41,7 +49,7 @@ func NewAPIClient(baseURL string, key []byte) *APIClient {
 }
 
 // DoRequest executes HTTP request.
-func (api *APIClient) DoRequest(request *http.Request) (*http.Response, error) {
+func (api *client) DoRequest(request *http.Request) (*http.Response, error) {
 	response, err := api.client.Do(request)
 	if err != nil {
 		slog.Warn("error while doing request",
@@ -64,7 +72,7 @@ func (api *APIClient) DoRequest(request *http.Request) (*http.Response, error) {
 }
 
 // SendMetricsData sends metrics data to server.
-func (api *APIClient) SendMetricsData(data *[]byte) error {
+func (api *client) SendMetricsData(data *[]byte) error {
 	rawData := *data
 	cBody, err := compressBody(data)
 	if err != nil {

@@ -14,6 +14,7 @@ import (
 	"github.com/e1m0re/grdn/internal/models"
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.43.1 --name=Monitor
 type Monitor interface {
 	// UpdateData collects main metrics data and updates local state.
 	UpdateData()

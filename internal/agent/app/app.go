@@ -17,27 +17,23 @@ import (
 	"github.com/e1m0re/grdn/internal/utils"
 )
 
-type content = []byte
+type contentType = []byte
 
-type App struct {
-	apiClient *apiclient.APIClient
+//go:generate go run github.com/vektra/mockery/v2@v2.43.1 --name=App
+type App interface {
+	// Start runs client application.
+	Start(ctx context.Context) error
+}
+
+type app struct {
+	apiClient apiclient.APIClient
 	cfg       *config.Config
 	monitor   monitor.Monitor
 	encryptor encryption.Encryptor
 }
 
-// NewApp is App constructor.
-func NewApp(cfg *config.Config, services *service.AgentServices) *App {
-	return &App{
-		apiClient: services.APIClient,
-		cfg:       cfg,
-		monitor:   services.Monitor,
-		encryptor: services.Encryptor,
-	}
-}
-
 // Start runs client application.
-func (app *App) Start(ctx context.Context) error {
+func (app *app) Start(ctx context.Context) error {
 	grp, ctx := errgroup.WithContext(ctx)
 
 	grp.Go(func() error {
@@ -45,57 +41,34 @@ func (app *App) Start(ctx context.Context) error {
 	})
 
 	grp.Go(func() error {
-		return app.updateGOPSData(ctx)
+		return app.updateGOPSDataWorker(ctx)
 	})
 
-	tasksQueue := make(chan content, 10)
+	tasksQueue := make(chan contentType, 10)
 	defer close(tasksQueue)
 
 	grp.Go(func() error {
 		for {
 			select {
 			case <-ctx.Done():
+				app.sendDataToServer(tasksQueue)
 				return nil
 			case <-time.After(app.cfg.ReportInterval):
-				app.sendDataToServer(ctx, tasksQueue)
+				app.sendDataToServer(tasksQueue)
 			}
 		}
 	})
 
-	grp.Go(func() error {
-		<-ctx.Done()
-		app.sendDataToServer(ctx, tasksQueue)
-
-		return nil
-	})
-
 	for i := 1; i <= app.cfg.RateLimit; i++ {
 		grp.Go(func() error {
-			for {
-				select {
-				case <-ctx.Done():
-				case c, ok := <-tasksQueue:
-					if !ok {
-						return nil
-					}
-					err := utils.RetryFunc(ctx, func() error {
-						return app.apiClient.SendMetricsData(&c)
-					})
-
-					if err != nil {
-						slog.Error("send metrics data failed",
-							slog.String("error", err.Error()),
-						)
-					}
-				}
-			}
+			return app.sendDataToServerWorker(ctx, tasksQueue)
 		})
 	}
 
 	return grp.Wait()
 }
 
-func (app *App) updateDataWorker(ctx context.Context) error {
+func (app *app) updateDataWorker(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -106,7 +79,7 @@ func (app *App) updateDataWorker(ctx context.Context) error {
 	}
 }
 
-func (app *App) updateGOPSData(ctx context.Context) error {
+func (app *app) updateGOPSDataWorker(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -120,7 +93,7 @@ func (app *App) updateGOPSData(ctx context.Context) error {
 	}
 }
 
-func (app *App) sendDataToServer(ctx context.Context, outChan chan<- content) {
+func (app *app) sendDataToServer(outChan chan<- contentType) {
 	metrics := app.monitor.GetMetricsList()
 
 	content, err := json.Marshal(metrics)
@@ -139,4 +112,33 @@ func (app *App) sendDataToServer(ctx context.Context, outChan chan<- content) {
 	}
 
 	outChan <- content
+}
+
+func (app *app) sendDataToServerWorker(ctx context.Context, tasksQueue <-chan contentType) error {
+	for {
+		select {
+		case <-ctx.Done():
+		case c, ok := <-tasksQueue:
+			if !ok {
+				return nil
+			}
+			err := utils.RetryFunc(ctx, func() error {
+				return app.apiClient.SendMetricsData(&c)
+			})
+
+			if err != nil {
+				slog.Error("send metrics data failed", slog.String("error", err.Error()))
+			}
+		}
+	}
+}
+
+// NewApp is app constructor.
+func NewApp(cfg *config.Config, services *service.AgentServices) App {
+	return &app{
+		apiClient: services.APIClient,
+		cfg:       cfg,
+		monitor:   services.Monitor,
+		encryptor: services.Encryptor,
+	}
 }

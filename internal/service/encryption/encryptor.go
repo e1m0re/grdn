@@ -8,6 +8,7 @@ import (
 	"os"
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.43.1 --name=Encryptor
 type Encryptor interface {
 	// Encrypt encrypts specified bytes with RSA OAEP.
 	Encrypt(plaintext []byte) ([]byte, error)
