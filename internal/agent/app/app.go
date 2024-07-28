@@ -27,13 +27,13 @@ type App struct {
 }
 
 // NewApp is App constructor.
-func NewApp(cfg *config.Config, services *service.AgentServices) (*App, error) {
+func NewApp(cfg *config.Config, services *service.AgentServices) *App {
 	return &App{
 		apiClient: services.APIClient,
 		cfg:       cfg,
 		monitor:   services.Monitor,
 		encryptor: services.Encryptor,
-	}, nil
+	}
 }
 
 // Start runs client application.
@@ -41,28 +41,11 @@ func (app *App) Start(ctx context.Context) error {
 	grp, ctx := errgroup.WithContext(ctx)
 
 	grp.Go(func() error {
-		for {
-			select {
-			case <-ctx.Done():
-				return nil
-			case <-time.After(app.cfg.PollInterval):
-				app.monitor.UpdateData()
-			}
-		}
+		return app.updateDataWorker(ctx)
 	})
 
 	grp.Go(func() error {
-		for {
-			select {
-			case <-ctx.Done():
-				return nil
-			case <-time.After(app.cfg.PollInterval):
-				err := app.monitor.UpdateGOPS(ctx)
-				if err != nil {
-					slog.Error("error update GOPS data", slog.String("error", err.Error()))
-				}
-			}
-		}
+		return app.updateGOPSData(ctx)
 	})
 
 	tasksQueue := make(chan content, 10)
@@ -110,6 +93,31 @@ func (app *App) Start(ctx context.Context) error {
 	}
 
 	return grp.Wait()
+}
+
+func (app *App) updateDataWorker(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(app.cfg.PollInterval):
+			app.monitor.UpdateData()
+		}
+	}
+}
+
+func (app *App) updateGOPSData(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(app.cfg.PollInterval):
+			err := app.monitor.UpdateGOPS(ctx)
+			if err != nil {
+				slog.Error("error update GOPS data", slog.String("error", err.Error()))
+			}
+		}
+	}
 }
 
 func (app *App) sendDataToServer(ctx context.Context, outChan chan<- content) {

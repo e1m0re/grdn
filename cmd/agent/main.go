@@ -54,11 +54,7 @@ func main() {
 		return
 	}
 
-	app1, err := app.NewApp(cfg, services)
-	if err != nil {
-		slog.Error(err.Error())
-		return
-	}
+	app1 := app.NewApp(cfg, services)
 
 	if err = app1.Start(ctx); err != nil {
 		slog.Error(err.Error())
