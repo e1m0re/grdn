@@ -53,7 +53,7 @@ func DecryptContent(privateKeyFile string) func(next http.Handler) http.Handler 
 
 				dr := newDecryptReader(r.Body, decryptor)
 				r.Body = dr
-				defer dr.Close()
+				//defer r.Body.Close()
 
 				next.ServeHTTP(w, r)
 			})

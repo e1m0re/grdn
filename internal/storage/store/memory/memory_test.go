@@ -13,6 +13,11 @@ import (
 	"github.com/e1m0re/grdn/internal/models"
 )
 
+var (
+	delta = int64(100)
+	value = float64(100.1)
+)
+
 func TestStore_Clear(t *testing.T) {
 	type fields struct {
 		metrics map[string]models.Metric
@@ -166,7 +171,6 @@ func TestStore_Ping(t *testing.T) {
 }
 
 func TestStore_GetMetric(t *testing.T) {
-	d := int64(100)
 	type fields struct {
 		metrics map[string]models.Metric
 	}
@@ -206,7 +210,7 @@ func TestStore_GetMetric(t *testing.T) {
 				metrics: map[string]models.Metric{
 					"c917499366554154b438bb8259183adc": {
 						Value: nil,
-						Delta: &d,
+						Delta: &delta,
 						MType: models.CounterType,
 						ID:    "metric 1",
 					},
@@ -220,7 +224,7 @@ func TestStore_GetMetric(t *testing.T) {
 			want: want{
 				metric: &models.Metric{
 					Value: nil,
-					Delta: &d,
+					Delta: &delta,
 					MType: models.CounterType,
 					ID:    "metric 1",
 				},
@@ -241,8 +245,6 @@ func TestStore_GetMetric(t *testing.T) {
 }
 
 func TestStore_GetAllMetrics(t *testing.T) {
-	d := int64(100)
-	v := float64(100.1)
 	type fields struct {
 		metrics map[string]models.Metric
 	}
@@ -251,13 +253,13 @@ func TestStore_GetAllMetrics(t *testing.T) {
 	}
 	type want struct {
 		err     error
-		metrics models.MetricsList
+		metrics map[string]models.Metric
 	}
 	tests := []struct {
-		name   string
+		want   want
 		fields fields
 		args   args
-		want   want
+		name   string
 	}{
 		{
 			name: "Empty list",
@@ -268,7 +270,7 @@ func TestStore_GetAllMetrics(t *testing.T) {
 				ctx: context.Background(),
 			},
 			want: want{
-				metrics: make(models.MetricsList, 0),
+				metrics: make(map[string]models.Metric),
 				err:     nil,
 			},
 		},
@@ -278,12 +280,12 @@ func TestStore_GetAllMetrics(t *testing.T) {
 				metrics: map[string]models.Metric{
 					"metric1": {
 						Value: nil,
-						Delta: &d,
+						Delta: &delta,
 						MType: models.CounterType,
 						ID:    "metric 1",
 					},
 					"metric2": {
-						Value: &v,
+						Value: &value,
 						Delta: nil,
 						MType: models.GaugeType,
 						ID:    "metric 2",
@@ -294,15 +296,15 @@ func TestStore_GetAllMetrics(t *testing.T) {
 				ctx: context.Background(),
 			},
 			want: want{
-				metrics: models.MetricsList{
-					{
+				metrics: map[string]models.Metric{
+					"metric 1": {
 						Value: nil,
-						Delta: &d,
+						Delta: &delta,
 						MType: models.CounterType,
 						ID:    "metric 1",
 					},
-					{
-						Value: &v,
+					"metric 2": {
+						Value: &value,
 						Delta: nil,
 						MType: models.GaugeType,
 						ID:    "metric 2",
@@ -318,7 +320,11 @@ func TestStore_GetAllMetrics(t *testing.T) {
 				metrics: test.fields.metrics,
 			}
 			got, err := s.GetAllMetrics(test.args.ctx)
-			assert.Equal(t, &test.want.metrics, got)
+			m := make(map[string]models.Metric)
+			for _, metric := range *got {
+				m[metric.ID] = *metric
+			}
+			assert.Equal(t, test.want.metrics, m)
 			assert.Equal(t, test.want.err, err)
 		})
 	}
@@ -503,8 +509,6 @@ func TestStore_UpdateMetrics(t *testing.T) {
 }
 
 func TestStore_Save(t *testing.T) {
-	d := int64(100)
-	v := float64(100.1)
 	type fields struct {
 		metrics  map[string]models.Metric
 		filePath string
@@ -528,14 +532,14 @@ func TestStore_Save(t *testing.T) {
 			fields: fields{
 				metrics: map[string]models.Metric{
 					"9e646d6d5855fbdadcaab202f1748505": {
-						Value: &v,
+						Value: &value,
 						Delta: nil,
 						MType: models.GaugeType,
 						ID:    "metric 1",
 					},
 					"3e0673a56ff12916a6293fa5a1bfc2db": {
 						Value: nil,
-						Delta: &d,
+						Delta: &delta,
 						MType: models.CounterType,
 						ID:    "metric 2",
 					},
@@ -572,8 +576,6 @@ func TestStore_Save(t *testing.T) {
 }
 
 func TestStore_Restore(t *testing.T) {
-	d := int64(100)
-	v := float64(100.1)
 	type fields struct {
 		metrics  map[string]models.Metric
 		filePath string
@@ -606,12 +608,12 @@ func TestStore_Restore(t *testing.T) {
 				err: nil,
 				metrics: map[string]models.Metric{
 					"9e646d6d5855fbdadcaab202f1748505": {
-						Value: &v,
+						Value: &value,
 						MType: models.GaugeType,
 						ID:    "metric 1",
 					},
 					"3e0673a56ff12916a6293fa5a1bfc2db": {
-						Delta: &d,
+						Delta: &delta,
 						MType: models.CounterType,
 						ID:    "metric 2",
 					},
