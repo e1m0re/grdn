@@ -3,16 +3,16 @@ package app
 import (
 	"context"
 	"errors"
-	"github.com/e1m0re/grdn/internal/service"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	"github.com/e1m0re/grdn/internal/agent/config"
 	"github.com/e1m0re/grdn/internal/models"
+	"github.com/e1m0re/grdn/internal/service"
 	mocks3 "github.com/e1m0re/grdn/internal/service/apiclient/mocks"
 	mocks2 "github.com/e1m0re/grdn/internal/service/encryption/mocks"
 	"github.com/e1m0re/grdn/internal/service/monitor/mocks"
