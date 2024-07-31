@@ -13,6 +13,7 @@ import (
 	"github.com/e1m0re/grdn/internal/agent/app"
 	"github.com/e1m0re/grdn/internal/agent/config"
 	"github.com/e1m0re/grdn/internal/gvar"
+	"github.com/e1m0re/grdn/internal/service"
 )
 
 var logger *zap.Logger
@@ -36,25 +37,26 @@ func init() {
 }
 
 func main() {
-	gvar.PrintWelcome()
-
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 	defer cancel()
 
-	go func() {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	gvar.PrintWelcome()
 
-		<-c
-		cancel()
-	}()
-
-	cfg := config.InitConfig()
-
-	app1 := app.NewApp(cfg)
-
-	err := app1.Start(ctx)
+	cfg, err := config.InitConfig()
 	if err != nil {
+		slog.Error(err.Error())
+		return
+	}
+
+	services, err := service.NewAgentServices(cfg)
+	if err != nil {
+		slog.Error(err.Error())
+		return
+	}
+
+	app1 := app.NewApp(cfg, services)
+
+	if err = app1.Start(ctx); err != nil {
 		slog.Error(err.Error())
 	}
 }
