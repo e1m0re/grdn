@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"log/slog"
 	"net/http"
-
-	"golang.org/x/sync/errgroup"
+	"net/netip"
 
 	appHandler "github.com/e1m0re/grdn/internal/api"
 	"github.com/e1m0re/grdn/internal/server/config"
@@ -81,13 +81,20 @@ func (srv *srv) shutdown(ctx context.Context) error {
 // NewServer is srv constructor.
 func NewServer(cfg *config.Config, s store.Store) Server {
 	services := service.NewServerServices(s)
-	handler := appHandler.NewHandler(services)
+
+	trustedSubnet, _ := netip.ParsePrefix(cfg.TrustedSubnet)
+	handlerConfig := appHandler.Config{
+		SignKey:        cfg.Key,
+		PrivateKeyFile: cfg.PrivateKeyFile,
+		TrustedSubnet:  &trustedSubnet,
+	}
+	handler := appHandler.NewHandler(services, handlerConfig)
 
 	return &srv{
 		cfg: cfg,
 		httpServer: &http.Server{
 			Addr:    cfg.ServerAddr,
-			Handler: handler.NewRouter(cfg.Key, cfg.PrivateKeyFile),
+			Handler: handler.NewRouter(),
 		},
 		services: services,
 	}

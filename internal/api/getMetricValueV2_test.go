@@ -180,8 +180,8 @@ func TestHandler_getMetricValueV2(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			services := test.mockServices()
-			handler := NewHandler(services)
-			router := handler.NewRouter("", "")
+			handler := NewHandler(services, Config{})
+			router := handler.NewRouter()
 
 			req, err := http.NewRequestWithContext(test.args.ctx, test.args.method, "/value", bytes.NewReader([]byte(test.args.body)))
 			require.NoError(t, err)

@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http/pprof"
+	"net/netip"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -10,31 +11,42 @@ import (
 	"github.com/e1m0re/grdn/internal/service"
 )
 
+type Config struct {
+	TrustedSubnet  *netip.Prefix
+	SignKey        string
+	PrivateKeyFile string
+}
+
 type Handler struct {
 	services *service.ServerServices
+	config   Config
 }
 
 // NewHandler is Handler constructor.
-func NewHandler(services *service.ServerServices) *Handler {
+func NewHandler(services *service.ServerServices, cfg Config) *Handler {
 	return &Handler{
 		services: services,
+		config:   cfg,
 	}
 }
 
 // NewRouter initializes new router.
-func (h *Handler) NewRouter(signKey string, privateKeyFile string) *chi.Mux {
+func (h *Handler) NewRouter() *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(appMiddleware.Logging())
+	if h.config.TrustedSubnet != nil {
+		r.Use(appMiddleware.SubnetChecking(h.config.TrustedSubnet))
+	}
 	r.Use(appMiddleware.UnzipContent())
-	if len(signKey) > 0 {
-		r.Use(appMiddleware.SignChecking(signKey))
+	if len(h.config.SignKey) > 0 {
+		r.Use(appMiddleware.SignChecking(h.config.SignKey))
 	}
 	r.Use(middleware.Compress(5, "text/html", "application/json"))
-	if len(privateKeyFile) > 0 {
-		r.Use(appMiddleware.DecryptContent(privateKeyFile))
+	if len(h.config.PrivateKeyFile) > 0 {
+		r.Use(appMiddleware.DecryptContent(h.config.PrivateKeyFile))
 	}
-	if len(signKey) > 0 {
-		r.Use(appMiddleware.SignResponse(signKey))
+	if len(h.config.SignKey) > 0 {
+		r.Use(appMiddleware.SignResponse(h.config.SignKey))
 	}
 
 	r.Route("/", func(r chi.Router) {
