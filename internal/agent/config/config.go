@@ -28,10 +28,10 @@ const (
 
 type Config struct {
 	Key            string
-	PublicKeyFile  string        `yaml:"crypto_key"`
-	ServerAddr     string        `yaml:"address"`
-	PollInterval   time.Duration `yaml:"poll_interval"`
-	ReportInterval time.Duration `yaml:"report_interval"`
+	PublicKeyFile  string        `json:"crypto_key"`
+	ServerAddr     string        `json:"address"`
+	PollInterval   time.Duration `json:"poll_interval"`
+	ReportInterval time.Duration `json:"report_interval"`
 	RateLimit      int
 }
 

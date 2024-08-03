@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"log/slog"
+	"net"
 	"net/http"
 )
 
@@ -50,6 +51,12 @@ func NewAPIClient(baseURL string, key []byte) APIClient {
 
 // DoRequest executes HTTP request.
 func (api *client) DoRequest(request *http.Request) (*http.Response, error) {
+	ip, err := api.GetLocalIP()
+	if err != nil {
+		return nil, err
+	}
+
+	request.Header.Set("X-Real-IP", ip.String())
 	response, err := api.client.Do(request)
 	if err != nil {
 		slog.Warn("error while doing request",
@@ -100,4 +107,16 @@ func (api *client) SendMetricsData(data *[]byte) error {
 	}
 
 	return err
+}
+
+func (api *client) GetLocalIP() (net.IP, error) {
+	conn, err := net.Dial("udp", api.baseURL)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	localAddress := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddress.IP, nil
 }
