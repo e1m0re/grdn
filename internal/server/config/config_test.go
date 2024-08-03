@@ -29,6 +29,7 @@ func TestInitConfig(t *testing.T) {
 				os.Setenv(envRestoreDataName, "true")
 				os.Setenv(envDatabaseDSNName, "")
 				os.Setenv(envFileStoragePathName, "/tmp/tmp.tmp")
+				os.Setenv(envTrustedSubnet, "172.20.1.0/24")
 			},
 			want: want{
 				cfg: &Config{
@@ -40,6 +41,7 @@ func TestInitConfig(t *testing.T) {
 					PrivateKeyFile:  "public key",
 					RestoreData:     true,
 					LoggerLevel:     "info",
+					TrustedSubnet:   "172.20.1.0/24",
 				},
 				err: nil,
 			},
