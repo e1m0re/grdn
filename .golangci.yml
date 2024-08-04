@@ -1,0 +1,5 @@
+issues:
+  exclude-rules:
+    - path: internal/proto
+      linters:
+        - typecheck

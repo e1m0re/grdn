@@ -1,0 +1,27 @@
+syntax = "proto3";
+package metric;
+option go_package = "grdn/internal/proto";
+
+message Metric {
+  string id = 1; // metrics name
+
+  enum MetricsType {
+    COUNTER = 0;
+    GAUGE = 1;
+  }
+  MetricsType type = 2; // metrics type
+  string value = 3; // value of metring in string
+}
+
+message UpdateMetricsListRequest {
+  repeated Metric metrics = 1; // list of metrics
+  int32 count = 2; // count of metrics
+}
+
+message UpdateMetricsListResponse {
+  string error = 1; // error
+}
+
+service Metrics {
+  rpc UpdateMetricsList(UpdateMetricsListRequest) returns (UpdateMetricsListResponse);
+}
