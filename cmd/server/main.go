@@ -14,8 +14,8 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/e1m0re/grdn/internal/gvar"
-	"github.com/e1m0re/grdn/internal/server"
-	"github.com/e1m0re/grdn/internal/server/config"
+	httpListener "github.com/e1m0re/grdn/internal/listeners/http"
+	"github.com/e1m0re/grdn/internal/listeners/http/config"
 	"github.com/e1m0re/grdn/internal/storage"
 	"github.com/e1m0re/grdn/internal/storage/store"
 )
@@ -41,8 +41,8 @@ func main() {
 		return
 	}
 
-	srv := server.NewServer(cfg, s)
-	err = srv.Start(ctx)
+	srv := httpListener.NewHTTPListener(cfg, s)
+	err = srv.Run(ctx)
 	if err != nil {
 		if errors.Is(err, http.ErrServerClosed) {
 			slog.Info(err.Error())

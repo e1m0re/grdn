@@ -1,52 +1,73 @@
-package server
+package http
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"log/slog"
 	"net/http"
 	"net/netip"
 
+	"golang.org/x/sync/errgroup"
+
 	appHandler "github.com/e1m0re/grdn/internal/api"
-	"github.com/e1m0re/grdn/internal/server/config"
+	"github.com/e1m0re/grdn/internal/listeners"
+	"github.com/e1m0re/grdn/internal/listeners/http/config"
 	"github.com/e1m0re/grdn/internal/service"
 	"github.com/e1m0re/grdn/internal/storage/store"
 )
 
-//go:generate go run github.com/vektra/mockery/v2@v2.43.1 --name=Server
-type Server interface {
-	// Start runs server.
-	Start(ctx context.Context) error
-}
-
-type srv struct {
+type listener struct {
 	cfg        *config.Config
 	httpServer *http.Server
 	services   *service.ServerServices
 }
 
-// Start runs server.
-func (srv *srv) Start(ctx context.Context) error {
+// Run starts HTTP listener.
+func (l *listener) Run(ctx context.Context) error {
 	grp, ctx := errgroup.WithContext(ctx)
 
 	grp.Go(func() error {
-		return srv.startHTTPServer()
+		return l.startHTTPServer()
 	})
 
 	grp.Go(func() error {
 		<-ctx.Done()
 
-		return srv.shutdown(ctx)
+		return l.Shutdown(ctx)
 	})
 
 	return grp.Wait()
 }
 
-func (srv *srv) startHTTPServer() error {
-	slog.Info(fmt.Sprintf("Running server on %s", srv.cfg.ServerAddr))
-	err := srv.httpServer.ListenAndServe()
+// Shutdown stops HTTP listener.
+func (l *listener) Shutdown(ctx context.Context) error {
+	err := l.httpServer.Shutdown(ctx)
+	if err != nil {
+		slog.Error("failed to shutdown http server")
+		return err
+	}
+
+	err = l.services.StorageService.Save(ctx)
+	if err != nil {
+		slog.Error(err.Error())
+		return err
+	}
+
+	err = l.services.StorageService.Close()
+	if err != nil {
+		slog.Error(err.Error())
+		return err
+	}
+
+	slog.Info("listener shutdown complete")
+
+	return err
+}
+
+func (l *listener) startHTTPServer() error {
+	slog.Info(fmt.Sprintf("Running server on %s", l.cfg.ServerAddr))
+	err := l.httpServer.ListenAndServe()
 	if err != nil && errors.Is(err, http.ErrServerClosed) {
 		return nil
 	}
@@ -54,32 +75,10 @@ func (srv *srv) startHTTPServer() error {
 	return err
 }
 
-func (srv *srv) shutdown(ctx context.Context) error {
-	err := srv.httpServer.Shutdown(ctx)
-	if err != nil {
-		slog.Error("failed to shutdown http server")
-		return err
-	}
+var _ listeners.Listener = (*listener)(nil)
 
-	err = srv.services.StorageService.Save(ctx)
-	if err != nil {
-		slog.Error(err.Error())
-		return err
-	}
-
-	err = srv.services.StorageService.Close()
-	if err != nil {
-		slog.Error(err.Error())
-		return err
-	}
-
-	slog.Info("srv shutdown complete")
-
-	return err
-}
-
-// NewServer is srv constructor.
-func NewServer(cfg *config.Config, s store.Store) Server {
+// NewHTTPListener initiates new instance of HTTP listener.
+func NewHTTPListener(cfg *config.Config, s store.Store) listeners.Listener {
 	services := service.NewServerServices(s)
 
 	trustedSubnet, _ := netip.ParsePrefix(cfg.TrustedSubnet)
@@ -90,7 +89,7 @@ func NewServer(cfg *config.Config, s store.Store) Server {
 	}
 	handler := appHandler.NewHandler(services, handlerConfig)
 
-	return &srv{
+	return &listener{
 		cfg: cfg,
 		httpServer: &http.Server{
 			Addr:    cfg.ServerAddr,

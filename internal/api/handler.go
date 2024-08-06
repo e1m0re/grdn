@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
-	appMiddleware "github.com/e1m0re/grdn/internal/server/middleware"
+	appMiddleware "github.com/e1m0re/grdn/internal/middleware"
 	"github.com/e1m0re/grdn/internal/service"
 )
 
