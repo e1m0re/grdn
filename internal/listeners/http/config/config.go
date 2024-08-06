@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"log/slog"
+	"net/netip"
 	"os"
 	"time"
 )
@@ -18,6 +19,7 @@ const (
 	defaultDatabaseDSN     = ""
 	defaultKey             = ""
 	defaultPrivateKeyFile  = ""
+	defaultTrustedSubnet   = ""
 
 	envConfigFileName      = "CONFIG"
 	envRunAddrName         = "ADDRESS"
@@ -27,18 +29,20 @@ const (
 	envDatabaseDSNName     = "DATABASE_DSN"
 	envKeyName             = "KEY"
 	envCryptoKeyName       = "CRYPTO_KEY"
+	envTrustedSubnet       = "TRUSTED_SUBNET"
 )
 
 type Config struct {
-	FileStoragePath string `yaml:"store_file"`
+	FileStoragePath string `json:"store_file"`
 	LoggerLevel     string
-	ServerAddr      string `yaml:"address"`
-	DatabaseDSN     string `yaml:"database_dsn"`
+	ServerAddr      string `json:"address"`
+	DatabaseDSN     string `json:"database_dsn"`
 	Key             string
-	PrivateKeyFile  string        `yaml:"crypto_key"`
-	StoreInternal   time.Duration `yaml:"store_interval"`
+	PrivateKeyFile  string        `json:"crypto_key"`
+	TrustedSubnet   string        `json:"trusted_subnet"`
+	StoreInternal   time.Duration `json:"store_interval"`
 	LogLevel        slog.Level
-	RestoreData     bool `yaml:"restore"`
+	RestoreData     bool `json:"restore"`
 	VerboseMode     bool
 }
 
@@ -69,6 +73,7 @@ func InitConfig() (*Config, error) {
 	flag.StringVar(&config.DatabaseDSN, "d", defaultDatabaseDSN, "database connection string")
 	flag.StringVar(&config.Key, "k", defaultKey, "key to use for encryption")
 	flag.StringVar(&config.PrivateKeyFile, "crypto-key", defaultPrivateKeyFile, "public key file path")
+	flag.StringVar(&config.TrustedSubnet, "t", defaultTrustedSubnet, "trusted subnet of clients")
 	flag.Parse()
 
 	if envRunAddr := os.Getenv(envRunAddrName); envRunAddr != "" {
@@ -105,6 +110,13 @@ func InitConfig() (*Config, error) {
 
 	if envCryptoKey := os.Getenv(envCryptoKeyName); envCryptoKey != "" {
 		config.PrivateKeyFile = envCryptoKey
+	}
+
+	if envTrustedSubnet := os.Getenv(envTrustedSubnet); envTrustedSubnet != "" {
+		config.TrustedSubnet = envTrustedSubnet
+	}
+	if _, err := netip.ParsePrefix(config.TrustedSubnet); err != nil {
+		return nil, err
 	}
 
 	return &config, nil

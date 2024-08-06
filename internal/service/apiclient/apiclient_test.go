@@ -13,7 +13,7 @@ func TestAPIClient_DoRequest(t *testing.T) {
 		testServer *httptest.Server
 	}
 	type args struct {
-		request func(s *httptest.Server) *http.Request
+		request func(u *url.URL, s *httptest.Server) *http.Request
 	}
 	type want struct {
 		response *http.Response
@@ -33,11 +33,11 @@ func TestAPIClient_DoRequest(t *testing.T) {
 				})),
 			},
 			args: args{
-				request: func(s *httptest.Server) *http.Request {
-					u, _ := url.Parse(s.URL)
+				request: func(u *url.URL, s *httptest.Server) *http.Request {
 					return &http.Request{
-						Method: http.MethodGet,
+						Method: u.Scheme,
 						URL:    u,
+						Header: make(http.Header),
 					}
 				},
 			},
@@ -57,11 +57,11 @@ func TestAPIClient_DoRequest(t *testing.T) {
 				})),
 			},
 			args: args{
-				request: func(s *httptest.Server) *http.Request {
-					u, _ := url.Parse(s.URL)
+				request: func(u *url.URL, s *httptest.Server) *http.Request {
 					return &http.Request{
-						Method: http.MethodGet,
+						Method: u.Scheme,
 						URL:    u,
+						Header: make(http.Header),
 					}
 				},
 			},
@@ -81,11 +81,11 @@ func TestAPIClient_DoRequest(t *testing.T) {
 				})),
 			},
 			args: args{
-				request: func(s *httptest.Server) *http.Request {
-					u, _ := url.Parse(s.URL)
+				request: func(u *url.URL, s *httptest.Server) *http.Request {
 					return &http.Request{
-						Method: http.MethodGet,
+						Method: u.Scheme,
 						URL:    u,
+						Header: make(http.Header),
 					}
 				},
 			},
@@ -101,8 +101,9 @@ func TestAPIClient_DoRequest(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			defer func() { test.fields.testServer.Close() }()
-			apiClient := NewAPIClient(test.fields.testServer.URL, nil)
-			got, err := apiClient.DoRequest(test.args.request(test.fields.testServer))
+			u, _ := url.Parse(test.fields.testServer.URL)
+			apiClient := NewAPIClient(u.Scheme, u.Host, nil)
+			got, err := apiClient.DoRequest(test.args.request(u, test.fields.testServer))
 			if got != nil {
 				defer got.Body.Close()
 			}
@@ -154,7 +155,8 @@ func TestAPIClient_SendMetricsData(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			defer func() { test.fields.testServer.Close() }()
-			apiClient := NewAPIClient(test.fields.testServer.URL, test.fields.key)
+			u, _ := url.Parse(test.fields.testServer.URL)
+			apiClient := NewAPIClient("http", u.Host, test.fields.key)
 			err := apiClient.SendMetricsData(&test.args.data)
 			assert.Equal(t, test.want.err, err)
 		})

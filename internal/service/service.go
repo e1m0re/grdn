@@ -43,7 +43,7 @@ func NewAgentServices(cfg *config.Config) (*AgentServices, error) {
 	}
 
 	return &AgentServices{
-		APIClient: apiclient.NewAPIClient("http://"+cfg.ServerAddr, []byte(cfg.Key)),
+		APIClient: apiclient.NewAPIClient("http", cfg.ServerAddr, []byte(cfg.Key)),
 		Monitor:   monitor.NewMonitor(),
 		Encryptor: encr,
 	}, nil

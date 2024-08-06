@@ -13,17 +13,17 @@ type App struct {
 	mock.Mock
 }
 
-// Start provides a mock function with given fields: ctx
-func (_m *App) Start(ctx context.Context) error {
-	ret := _m.Called(ctx)
+// Start provides a mock function with given fields: ctx, transport
+func (_m *App) Start(ctx context.Context, transport string) error {
+	ret := _m.Called(ctx, transport)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Start")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
-		r0 = rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, transport)
 	} else {
 		r0 = ret.Error(0)
 	}

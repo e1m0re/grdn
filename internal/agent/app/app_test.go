@@ -135,7 +135,7 @@ func TestApp_updateDataWorker(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			go func() {
-				err := app.Start(ctx)
+				err := app.Start(ctx, "")
 				if err != nil {
 					panic(err)
 				}
@@ -152,6 +152,7 @@ func TestNewApp(t *testing.T) {
 	cfg := &config.Config{}
 	services, err := service.NewAgentServices(cfg)
 	require.Nil(t, err)
-	app := NewApp(cfg, services)
+	app, err := NewApp(cfg, services)
+	require.Nil(t, err)
 	assert.Implements(t, (*App)(nil), app)
 }

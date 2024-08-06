@@ -3,6 +3,7 @@
 package mocks
 
 import (
+	net "net"
 	http "net/http"
 
 	mock "github.com/stretchr/testify/mock"
@@ -36,6 +37,36 @@ func (_m *APIClient) DoRequest(request *http.Request) (*http.Response, error) {
 
 	if rf, ok := ret.Get(1).(func(*http.Request) error); ok {
 		r1 = rf(request)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetLocalIP provides a mock function with given fields:
+func (_m *APIClient) GetLocalIP() (net.IP, error) {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetLocalIP")
+	}
+
+	var r0 net.IP
+	var r1 error
+	if rf, ok := ret.Get(0).(func() (net.IP, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() net.IP); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(net.IP)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
 	} else {
 		r1 = ret.Error(1)
 	}

@@ -22,18 +22,19 @@ type contentType = []byte
 //go:generate go run github.com/vektra/mockery/v2@v2.43.1 --name=App
 type App interface {
 	// Start runs client application.
-	Start(ctx context.Context) error
+	Start(ctx context.Context, transport string) error
 }
 
 type app struct {
-	apiClient apiclient.APIClient
-	cfg       *config.Config
-	monitor   monitor.Monitor
-	encryptor encryption.Encryptor
+	apiClient  apiclient.APIClient
+	clientGRPC ClientGRPC
+	cfg        *config.Config
+	monitor    monitor.Monitor
+	encryptor  encryption.Encryptor
 }
 
 // Start runs client application.
-func (app *app) Start(ctx context.Context) error {
+func (app *app) Start(ctx context.Context, transport string) error {
 	grp, ctx := errgroup.WithContext(ctx)
 
 	grp.Go(func() error {
@@ -44,28 +45,11 @@ func (app *app) Start(ctx context.Context) error {
 		return app.updateGOPSDataWorker(ctx)
 	})
 
-	tasksQueue := make(chan contentType, 10)
-	defer close(tasksQueue)
-
-	grp.Go(func() error {
-		for {
-			select {
-			case <-ctx.Done():
-				app.sendDataToServer(tasksQueue)
-				return nil
-			case <-time.After(app.cfg.ReportInterval):
-				app.sendDataToServer(tasksQueue)
-			}
-		}
-	})
-
-	for i := 1; i <= app.cfg.RateLimit; i++ {
-		grp.Go(func() error {
-			return app.sendDataToServerWorker(ctx, tasksQueue)
-		})
+	if transport == "grpc" {
+		return app.workByGRPC(ctx, grp)
 	}
 
-	return grp.Wait()
+	return app.workByHTTP(ctx, grp)
 }
 
 func (app *app) updateDataWorker(ctx context.Context) error {
@@ -93,7 +77,32 @@ func (app *app) updateGOPSDataWorker(ctx context.Context) error {
 	}
 }
 
-func (app *app) sendDataToServer(outChan chan<- contentType) {
+func (app *app) workByHTTP(ctx context.Context, grp *errgroup.Group) error {
+	tasksQueue := make(chan contentType, 10)
+	defer close(tasksQueue)
+
+	grp.Go(func() error {
+		for {
+			select {
+			case <-ctx.Done():
+				app.sendDataToHTTPServer(tasksQueue)
+				return nil
+			case <-time.After(app.cfg.ReportInterval):
+				app.sendDataToHTTPServer(tasksQueue)
+			}
+		}
+	})
+
+	for i := 1; i <= app.cfg.RateLimit; i++ {
+		grp.Go(func() error {
+			return app.sendDataToHTTPServerWorker(ctx, tasksQueue)
+		})
+	}
+
+	return grp.Wait()
+}
+
+func (app *app) sendDataToHTTPServer(outChan chan<- contentType) {
 	metrics := app.monitor.GetMetricsList()
 
 	content, err := json.Marshal(metrics)
@@ -114,7 +123,7 @@ func (app *app) sendDataToServer(outChan chan<- contentType) {
 	outChan <- content
 }
 
-func (app *app) sendDataToServerWorker(ctx context.Context, tasksQueue <-chan contentType) error {
+func (app *app) sendDataToHTTPServerWorker(ctx context.Context, tasksQueue <-chan contentType) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -133,12 +142,65 @@ func (app *app) sendDataToServerWorker(ctx context.Context, tasksQueue <-chan co
 	}
 }
 
-// NewApp is app constructor.
-func NewApp(cfg *config.Config, services *service.AgentServices) App {
-	return &app{
-		apiClient: services.APIClient,
-		cfg:       cfg,
-		monitor:   services.Monitor,
-		encryptor: services.Encryptor,
+func (app *app) workByGRPC(ctx context.Context, grp *errgroup.Group) error {
+	tasksQueue := make(chan byte, 10)
+
+	grp.Go(func() error {
+		for {
+			select {
+			case <-ctx.Done():
+				tasksQueue <- 1
+				return nil
+			case <-time.After(app.cfg.ReportInterval):
+				tasksQueue <- 1
+			}
+		}
+	})
+
+	for i := 1; i <= app.cfg.RateLimit; i++ {
+		grp.Go(func() error {
+			return app.sendDataToGRPCServer(ctx, tasksQueue)
+		})
 	}
+
+	return grp.Wait()
+}
+
+func (app *app) sendDataToGRPCServer(ctx context.Context, tasksQueue <-chan byte) error {
+	for {
+		select {
+		case <-ctx.Done():
+		case _, ok := <-tasksQueue:
+			if !ok {
+				return nil
+			}
+			err := utils.RetryFunc(ctx, func() error {
+				metrics := app.monitor.GetMetricsList()
+				return app.clientGRPC.UpdateMetricsList(ctx, metrics)
+			})
+
+			if err != nil {
+				slog.Error("send metrics data failed", slog.String("error", err.Error()))
+			}
+		}
+	}
+}
+
+var _ App = (*app)(nil)
+
+// NewApp is app constructor.
+func NewApp(cfg *config.Config, services *service.AgentServices) (App, error) {
+
+	clientGRPC, err := NewClientGRPC(cfg.ServerAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &app{
+		apiClient:  services.APIClient,
+		clientGRPC: clientGRPC,
+		cfg:        cfg,
+		monitor:    services.Monitor,
+		encryptor:  services.Encryptor,
+	}, nil
 }

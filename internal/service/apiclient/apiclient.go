@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"log/slog"
+	"net"
 	"net/http"
 )
 
@@ -31,25 +32,27 @@ type APIClient interface {
 	DoRequest(request *http.Request) (*http.Response, error)
 	// SendMetricsData sends metrics data to server.
 	SendMetricsData(data *[]byte) error
+	// GetLocalIP tries get clients IP.
+	GetLocalIP() (net.IP, error)
 }
 
 type client struct {
-	client  *http.Client
-	baseURL string
-	key     []byte
+	client        *http.Client
+	protocol      string
+	serverAddress string
+	key           []byte
 }
 
-// NewAPIClient is client constructor.
-func NewAPIClient(baseURL string, key []byte) APIClient {
-	return &client{
-		client:  &http.Client{},
-		baseURL: baseURL,
-		key:     key,
-	}
-}
+var _ APIClient = (*client)(nil)
 
 // DoRequest executes HTTP request.
 func (api *client) DoRequest(request *http.Request) (*http.Response, error) {
+	ip, err := api.GetLocalIP()
+	if err != nil {
+		return nil, err
+	}
+
+	request.Header.Set("X-Real-IP", ip.String())
 	response, err := api.client.Do(request)
 	if err != nil {
 		slog.Warn("error while doing request",
@@ -79,7 +82,8 @@ func (api *client) SendMetricsData(data *[]byte) error {
 		return err
 	}
 
-	request, err := http.NewRequest(http.MethodPost, api.baseURL+"/updates/", cBody)
+	url := api.protocol + "//:" + api.serverAddress + "/updates/"
+	request, err := http.NewRequest(http.MethodPost, url, cBody)
 	if err != nil {
 		return err
 	}
@@ -100,4 +104,27 @@ func (api *client) SendMetricsData(data *[]byte) error {
 	}
 
 	return err
+}
+
+// GetLocalIP tries get clients IP.
+func (api *client) GetLocalIP() (net.IP, error) {
+	conn, err := net.Dial("udp", api.serverAddress)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	localAddress := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddress.IP, nil
+}
+
+// NewAPIClient is client constructor.
+func NewAPIClient(protocol string, serverAddress string, key []byte) APIClient {
+	return &client{
+		client:        &http.Client{},
+		protocol:      protocol,
+		serverAddress: serverAddress,
+		key:           key,
+	}
 }
