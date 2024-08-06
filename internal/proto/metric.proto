@@ -2,7 +2,7 @@ syntax = "proto3";
 package metric;
 option go_package = "grdn/internal/proto";
 
-message Metric {
+message MetricData {
   string id = 1; // metrics name
 
   enum MetricsType {
@@ -14,7 +14,7 @@ message Metric {
 }
 
 message UpdateMetricsListRequest {
-  repeated Metric metrics = 1; // list of metrics
+  repeated MetricData metricsData = 1; // list of metrics
   int32 count = 2; // count of metrics
 }
 
