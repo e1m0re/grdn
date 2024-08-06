@@ -37,9 +37,10 @@ type APIClient interface {
 }
 
 type client struct {
-	client  *http.Client
-	baseURL string
-	key     []byte
+	client        *http.Client
+	protocol      string
+	serverAddress string
+	key           []byte
 }
 
 var _ APIClient = (*client)(nil)
@@ -81,7 +82,8 @@ func (api *client) SendMetricsData(data *[]byte) error {
 		return err
 	}
 
-	request, err := http.NewRequest(http.MethodPost, api.baseURL+"/updates/", cBody)
+	url := api.protocol + "//:" + api.serverAddress + "/updates/"
+	request, err := http.NewRequest(http.MethodPost, url, cBody)
 	if err != nil {
 		return err
 	}
@@ -106,7 +108,7 @@ func (api *client) SendMetricsData(data *[]byte) error {
 
 // GetLocalIP tries get clients IP.
 func (api *client) GetLocalIP() (net.IP, error) {
-	conn, err := net.Dial("udp", api.baseURL)
+	conn, err := net.Dial("udp", api.serverAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -118,10 +120,11 @@ func (api *client) GetLocalIP() (net.IP, error) {
 }
 
 // NewAPIClient is client constructor.
-func NewAPIClient(baseURL string, key []byte) APIClient {
+func NewAPIClient(protocol string, serverAddress string, key []byte) APIClient {
 	return &client{
-		client:  &http.Client{},
-		baseURL: baseURL,
-		key:     key,
+		client:        &http.Client{},
+		protocol:      protocol,
+		serverAddress: serverAddress,
+		key:           key,
 	}
 }
