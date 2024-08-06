@@ -1,23 +1,27 @@
-package metrics
+// Package metricsgrpc implements processes of metrics.
+package metricsgrpc
 
 import (
 	"context"
 	"log/slog"
 
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	appgrpc "github.com/e1m0re/grdn/internal/grpc"
 	"github.com/e1m0re/grdn/internal/models"
 	"github.com/e1m0re/grdn/internal/proto"
 	"github.com/e1m0re/grdn/internal/service/metrics"
 	"github.com/e1m0re/grdn/internal/utils"
 )
 
-type serverAPI struct {
+type metricsServer struct {
+	proto.UnimplementedMetricsServer
 	metricsManager metrics.Manager
 }
 
-func (s *serverAPI) UpdateMetricsList(ctx context.Context, in *proto.UpdateMetricsListRequest) (*proto.UpdateMetricsListResponse, error) {
+func (ms *metricsServer) UpdateMetricsList(ctx context.Context, in *proto.UpdateMetricsListRequest) (*proto.UpdateMetricsListResponse, error) {
 	var response proto.UpdateMetricsListResponse
 
 	metricsData := make(models.MetricsList, in.Count)
@@ -41,7 +45,7 @@ func (s *serverAPI) UpdateMetricsList(ctx context.Context, in *proto.UpdateMetri
 	}
 
 	err := utils.RetryFunc(ctx, func() error {
-		return s.metricsManager.UpdateMetrics(ctx, metricsData)
+		return ms.metricsManager.UpdateMetrics(ctx, metricsData)
 	})
 	if err != nil {
 		slog.Error("update metrics data failed", slog.String("error", err.Error()))
@@ -49,4 +53,16 @@ func (s *serverAPI) UpdateMetricsList(ctx context.Context, in *proto.UpdateMetri
 	}
 
 	return &response, nil
+}
+
+func (ms *metricsServer) Register(gRPCServer *grpc.Server) {
+	proto.RegisterMetricsServer(gRPCServer, ms)
+}
+
+var _ appgrpc.Server = (*metricsServer)(nil)
+
+func NewService(mm metrics.Manager) appgrpc.Server {
+	return &metricsServer{
+		metricsManager: mm,
+	}
 }
